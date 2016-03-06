@@ -621,6 +621,51 @@ bool registerScriptStuff()
     }
     {
         int ret = simRegisterScriptCallbackFunction("simExtROS_shutdownSubscriber@ROS", "simExtROS_shutdownSubscriber(number subscriberHandle)", simExtROS_shutdownSubscriber);
+        if(ret == 0)
+        {
+            std::cout << "Plugin 'ROS': warning: replaced function simExtROS_shutdownSubscriber" << std::endl;
+        }
+        else if(ret == -1)
+        {
+            std::cout << "Plugin 'ROS': error: failed to register function simExtROS_shutdownSubscriber" << std::endl;
+            return false;
+        }
+    }
+    {
+        int ret = simRegisterScriptCallbackFunction("simExtROS_advertise@ROS", "number publisherHandle=simExtROS_advertise(string topicName, string topicType, string callback, bool latch=false, number queueSize=0)", simExtROS_advertise);
+        if(ret == 0)
+        {
+            std::cout << "Plugin 'ROS': warning: replaced function simExtROS_advertise" << std::endl;
+        }
+        else if(ret == -1)
+        {
+            std::cout << "Plugin 'ROS': error: failed to register function simExtROS_advertise" << std::endl;
+            return false;
+        }
+    }
+    {
+        int ret = simRegisterScriptCallbackFunction("simExtROS_shutdownPublisher@ROS", "simExtROS_shutdownPublisher(number publisherHandle)", simExtROS_shutdownPublisher);
+        if(ret == 0)
+        {
+            std::cout << "Plugin 'ROS': warning: replaced function simExtROS_shutdownPublisher" << std::endl;
+        }
+        else if(ret == -1)
+        {
+            std::cout << "Plugin 'ROS': error: failed to register function simExtROS_shutdownPublisher" << std::endl;
+            return false;
+        }
+    }
+    {
+        int ret = simRegisterScriptCallbackFunction("simExtROS_publish@ROS", "simExtROS_publish(number publisherHandle, table message)", simExtROS_publish);
+        if(ret == 0)
+        {
+            std::cout << "Plugin 'ROS': warning: replaced function simExtROS_publish" << std::endl;
+        }
+        else if(ret == -1)
+        {
+            std::cout << "Plugin 'ROS': error: failed to register function simExtROS_publish" << std::endl;
+            return false;
+        }
     }
 }
 
