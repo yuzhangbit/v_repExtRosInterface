@@ -52,6 +52,20 @@ int publisherProxyNextHandle = 7980;
 std::map<int, SubscriberProxy *> subscriberProxies;
 std::map<int, PublisherProxy *> publisherProxies;
 
+bool read__float32(int stack, float *value)
+{
+    if(simGetStackFloatValue(stack, value) == 1)
+    {
+        simPopStackItem(stack, 1);
+        return true;
+    }
+    else
+    {
+        std::cerr << "read__float32: error: expected float value." << std::endl;
+        return false;
+    }
+}
+
 bool read__std_msgs__Float32(int stack, std_msgs::Float32 *msg)
 {
     int i;
@@ -77,13 +91,7 @@ bool read__std_msgs__Float32(int stack, std_msgs::Float32 *msg)
 
             if(strcmp(str, "data") == 0)
             {
-                float v;
-                if(simGetStackFloatValue(stack, &v) == 1)
-                {
-                    simPopStackItem(stack, 1);
-                    msg->data = v;
-                }
-                else
+                if(!read__float32(int stack, float *value))
                 {
                     std::cerr << "read__std_msgs__Float32: error: value is not float for key: " << str << "." << std::endl;
                     return false;
@@ -94,6 +102,7 @@ bool read__std_msgs__Float32(int stack, std_msgs::Float32 *msg)
                 std::cerr << "read__std_msgs__Float32: error: unexpected key: " << str << "." << std::endl;
                 return false;
             }
+
             simReleaseBuffer(str);
         }
         else
@@ -108,6 +117,15 @@ bool read__std_msgs__Float32(int stack, std_msgs::Float32 *msg)
     return true;
 }
 
+bool write__float32(float value, int stack)
+{
+    if(simPushFloatOntoStack(stack, msg->data) == -1)
+    {
+        std::cerr << "ros_callback__std_msgs__Float32: error: push table value (data) failed." << std::endl;
+        return false;
+    }
+}
+
 bool write__std_msgs__Float32(const std_msgs::Float32::ConstPtr& msg, int stack)
 {
     if(simPushTableOntoStack(stack) == -1)
@@ -120,7 +138,7 @@ bool write__std_msgs__Float32(const std_msgs::Float32::ConstPtr& msg, int stack)
         std::cerr << "ros_callback__std_msgs__Float32: error: push table key (data) failed." << std::endl;
         return false;
     }
-    if(simPushFloatOntoStack(stack, msg->data) == -1)
+    if(!write__float32(msg->data, stack))
     {
         std::cerr << "ros_callback__std_msgs__Float32: error: push table value (data) failed." << std::endl;
         return false;
