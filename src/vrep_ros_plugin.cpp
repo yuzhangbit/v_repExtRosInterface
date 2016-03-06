@@ -518,22 +518,22 @@ bool write__std_msgs__Float32(const std_msgs::Float32::ConstPtr& msg, int stack)
 {
     if(simPushTableOntoStack(stack) == -1)
     {
-        std::cerr << "write__sta_msgs__Float32: error: push table failed." << std::endl;
+        std::cerr << "write__std_msgs__Float32: error: push table failed." << std::endl;
         return false;
     }
     if(simPushStringOntoStack(stack, "data", 0) == -1)
     {
-        std::cerr << "write__sta_msgs__Float32: error: push table key (data) failed." << std::endl;
+        std::cerr << "write__std_msgs__Float32: error: push table key (data) failed." << std::endl;
         return false;
     }
     if(!write__float32(msg->data, stack))
     {
-        std::cerr << "write__sta_msgs__Float32: error: push table value (data) failed." << std::endl;
+        std::cerr << "write__std_msgs__Float32: error: push table value (data) failed." << std::endl;
         return false;
     }
     if(simInsertDataIntoStackTable(stack) == -1)
     {
-        std::cerr << "write__sta_msgs__Float32: error: insert table failed." << std::endl;
+        std::cerr << "write__std_msgs__Float32: error: insert table failed." << std::endl;
         return false;
     }
     return true;
