@@ -568,10 +568,16 @@ void simExtROS_publish(SScriptCallBack *p)
 
     PublisherProxy *publisherProxy = publisherProxies[publisherHandle];
 
+    simMoveStackItemToTop(p->stackID, 0);
+
     if(publisherProxy->topicType == "std_msgs/Float32")
     {
         std_msgs::Float32 msg;
-        read__std_msgs__Float32(p->stackID, &msg);
+        if(!read__std_msgs__Float32(p->stackID, &msg))
+        {
+            simSetLastError("simExtROS_publish", "invalid message format (check stderr)");
+            return;
+        }
         publisherProxy->publisher.publish(msg);
     }
     else
@@ -632,7 +638,7 @@ bool registerScriptStuff()
         }
     }
     {
-        int ret = simRegisterScriptCallbackFunction("simExtROS_advertise@ROS", "number publisherHandle=simExtROS_advertise(string topicName, string topicType, string callback, bool latch=false, number queueSize=0)", simExtROS_advertise);
+        int ret = simRegisterScriptCallbackFunction("simExtROS_advertise@ROS", "number publisherHandle=simExtROS_advertise(string topicName, string topicType, bool latch=false, number queueSize=0)", simExtROS_advertise);
         if(ret == 0)
         {
             std::cout << "Plugin 'ROS': warning: replaced function simExtROS_advertise" << std::endl;
@@ -667,6 +673,7 @@ bool registerScriptStuff()
             return false;
         }
     }
+    return true;
 }
 
 // This is the plugin start routine (called just once, just after the plugin was loaded):
