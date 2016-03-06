@@ -9,6 +9,7 @@
 #include <ros/ros.h>
 
 #include <vrep_ros_plugin/ros_msg_builtin_io.h>
+#include <vrep_ros_plugin/ros_msg_io.h>
 
 #include "../include/v_repLib.h"
 #include "../include/scriptFunctionData.h"
@@ -156,10 +157,8 @@ void simExtROS_subscribe(SScriptCallBack *p)
     subscriberProxy->topicCallback.name = topicCallback;
     subscriberProxies[subscriberProxy->handle] = subscriberProxy;
 
-    if(topicType == "std_msgs/Float32")
-    {
-        subscriberProxy->subscriber = nh->subscribe<std_msgs::Float32>(topicName, queueSize, boost::bind(ros_callback__std_msgs__Float32, _1, subscriberProxy));
-    }
+    if(0) {}
+#include <vrep_ros_plugin/generated_sub.cpp>
     else
     {
         simSetLastError("simExtROS_subscribe", "unsupported message type. please edit and recompile ROS plugin");
@@ -338,10 +337,8 @@ void simExtROS_advertise(SScriptCallBack *p)
     publisherProxy->topicType = topicType;
     publisherProxies[publisherProxy->handle] = publisherProxy;
 
-    if(topicType == "std_msgs/Float32")
-    {
-        publisherProxy->publisher = nh->advertise<std_msgs::Float32>(topicName, queueSize, latch);
-    }
+    if(0) {}
+#include <vrep_ros_plugin/generated_adv.cpp>
     else
     {
         simSetLastError("simExtROS_advertise", "unsupported message type. please edit and recompile ROS plugin");
@@ -467,16 +464,8 @@ void simExtROS_publish(SScriptCallBack *p)
 
     simMoveStackItemToTop(p->stackID, 0);
 
-    if(publisherProxy->topicType == "std_msgs/Float32")
-    {
-        std_msgs::Float32 msg;
-        if(!read__std_msgs__Float32(p->stackID, &msg))
-        {
-            simSetLastError("simExtROS_publish", "invalid message format (check stderr)");
-            return;
-        }
-        publisherProxy->publisher.publish(msg);
-    }
+    if(0) {}
+#include <vrep_ros_plugin/generated_pub.cpp>
     else
     {
         simSetLastError("simExtROS_publish", "unsupported message type. please edit and recompile ROS plugin");

@@ -1,6 +1,8 @@
 from sys import argv, exit, stderr
 import re
 
+resolve_msg = {}
+
 def is_identifier(s):
     return re.match('^[a-zA-Z_][a-zA-Z0-9_]*$', s)
 
@@ -13,7 +15,9 @@ class TypeSpec:
         else:
             self.array = False
         # perform substitutions:
-        if s == 'Header': s = 'std_msgs/Header'
+        if s in resolve_msg: s = resolve_msg[s]
+        if s == 'byte': s = 'int8' # deprecated
+        if s == 'char': s = 'uint8' # deprecated
         # check builtins:
         self.builtin = s in ('bool', 'int8', 'uint8', 'int16', 'uint16', 'int32', 'uint32', 'int64', 'uint64', 'float32', 'float64', 'string', 'time', 'duration')
         self.fullname = s
@@ -44,12 +48,12 @@ class TypeSpec:
             if self.mtype == 'uint32': return 'uint32_t'
             if self.mtype == 'int64': return 'int64_t'
             if self.mtype == 'uint64': return 'uint64_t'
-            if self.mtype == 'float': return 'float'
-            if self.mtype == 'double': return 'double'
+            if self.mtype == 'float32': return 'float'
+            if self.mtype == 'float64': return 'double'
             if self.mtype == 'string': return 'std::string'
             if self.mtype == 'time': return 'ros::Time'
             if self.mtype == 'duration': return 'ros::Duration'
-            raise Exception()
+            raise Exception('can\'t get ctype of builtin %s' % self.mtype)
         return self.package + '::' + self.mtype
 
     def __str__(self):
@@ -62,15 +66,19 @@ class TypeSpec:
 
 fields = {}
 
-if len(argv) != 3 or argv[1] not in ('cpp', 'h', 'cb', 'adv', 'pub', 'sub'):
+if len(argv) != 5 or argv[1] not in ('cpp', 'h', 'adv', 'pub', 'sub'):
     stderr.write('argument error\n')
     exit(42)
 
 mode = argv[1]
 filename = argv[2]
-gp, _, gte = filename.split('/')[-3:]
-gt = gte.split('.')[0]
-gt = TypeSpec('{}/{}'.format(gp, gt))
+gt = TypeSpec(argv[3])
+
+with open(argv[4]) as f:
+    for l in f.readlines():
+        l = l.strip()
+        pkg, n = l.split('/')
+        resolve_msg[n] = l
 
 with open(filename) as f:
     for ln_orig in f.readlines():
@@ -110,17 +118,17 @@ with open(filename) as f:
 wfn = 'write__' + gt.normalized()
 
 if mode == 'h':
-    print('bool {wfn}(const {gp}::{gt}::ConstPtr& msg, int stack);'.format(**locals()))
+    print('bool {wfn}(const {ctype_}::ConstPtr& msg, int stack);'.format(ctype_=gt.ctype(), **locals()))
 
 if mode == 'cpp':
     wf = '''
-bool {wfn}(const {gp}::{gt}::ConstPtr& msg, int stack)
+bool {wfn}(const {ctype_}::ConstPtr& msg, int stack)
 {{
     if(simPushTableOntoStack(stack) == -1)
     {{
         std::cerr << "{wfn}: error: push table failed." << std::endl;
         return false;
-    }}'''.format(**locals())
+    }}'''.format(ctype_=gt.ctype(), **locals())
     for n, t in fields.items():
         if t.array:
             wf += '''
@@ -180,11 +188,11 @@ bool {wfn}(const {gp}::{gt}::ConstPtr& msg, int stack)
 rfn = 'read__' + gt.normalized()
 
 if mode == 'h':
-    print('bool {rfn}(int stack, {gp}::{gt} *msg);'.format(**locals()))
+    print('bool {rfn}(int stack, {ctype_} *msg);'.format(ctype_=gt.ctype(), **locals()))
 
 if mode == 'cpp':
     rf = '''
-bool {rfn}(int stack, {gp}::{gt} *msg)
+bool {rfn}(int stack, {ctype_} *msg)
 {{
     int i;
     if((i = simGetStackTableInfo(stack, 0)) != sim_stack_table_map)
@@ -207,7 +215,7 @@ bool {rfn}(int stack, {gp}::{gt} *msg)
         {{
             simPopStackItem(stack, 1); // now stack top is value
 
-            if(0) {{}}'''.format(**locals())
+            if(0) {{}}'''.format(ctype_=gt.ctype(), **locals())
     for n, t in fields.items():
         if t.array:
             rf += '''
@@ -279,7 +287,7 @@ bool {rfn}(int stack, {gp}::{gt} *msg)
 if mode == 'h':
     print('void ros_callback__{norm}(const {ctype_}::ConstPtr& msg, SubscriberProxy *proxy);\n'.format(norm=gt.normalized(), ctype_=gt.ctype(), **locals()))
 
-if mode == 'cb':
+if mode == 'cpp':
     cb = '''
 void ros_callback__{norm}(const {ctype_}::ConstPtr& msg, SubscriberProxy *proxy)
 {{
@@ -316,23 +324,20 @@ if mode == 'pub':
             return;
         }}
         publisherProxy->publisher.publish(msg);
-    }}
-'''.format(fn=gt.fullname, norm=gt.normalized(), ctype_=gt.ctype(), **locals())
+    }}'''.format(fn=gt.fullname, norm=gt.normalized(), ctype_=gt.ctype(), **locals())
     print(p)
 
 if mode == 'adv':
     p = '''    else if(topicType == "{fn}")
     {{
         publisherProxy->publisher = nh->advertise<{ctype_}>(topicName, queueSize, latch);
-    }}
-'''.format(fn=gt.fullname, norm=gt.normalized(), ctype_=gt.ctype(), **locals())
+    }}'''.format(fn=gt.fullname, norm=gt.normalized(), ctype_=gt.ctype(), **locals())
     print(p)
 
 if mode == 'sub':
     p = '''    else if(topicType == "{fn}")
     {{
         subscriberProxy->subscriber = nh->subscribe<{ctype_}>(topicName, queueSize, boost::bind(ros_callback__{norm}, _1, subscriberProxy));
-    }}
-'''.format(fn=gt.fullname, norm=gt.normalized(), ctype_=gt.ctype(), **locals())
+    }}'''.format(fn=gt.fullname, norm=gt.normalized(), ctype_=gt.ctype(), **locals())
     print(p)
 
