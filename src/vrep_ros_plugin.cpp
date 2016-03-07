@@ -9,6 +9,8 @@ LIBRARY vrepLib; // the V-REP library that we will dynamically load and bind
 
 ros::NodeHandle *nh = NULL;
 
+tf::TransformBroadcaster *tfbr = NULL;
+
 int subscriberProxyNextHandle = 3562;
 int publisherProxyNextHandle = 7980;
 
@@ -126,6 +128,7 @@ bool initialize()
         return false;
 
     nh = new ros::NodeHandle("~");
+    tfbr = new tf::TransformBroadcaster();
 
     return true;
 }
@@ -133,6 +136,9 @@ bool initialize()
 void shutdown()
 {
     ros::shutdown();
+
+    delete tfbr;
+    delete nh;
 }
 
 // This is the plugin start routine (called just once, just after the plugin was loaded):
