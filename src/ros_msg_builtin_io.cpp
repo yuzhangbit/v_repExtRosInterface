@@ -1,5 +1,5 @@
-#include <vrep_ros_plugin/ros_msg_builtin_io.h>
-#include "../include/v_repLib.h"
+#include <ros_msg_builtin_io.h>
+#include <v_repLib.h>
 #include <iostream>
 
 bool read__bool(int stack, uint8_t *value)

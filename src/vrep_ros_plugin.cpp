@@ -8,12 +8,11 @@
 
 #include <ros/ros.h>
 
-#include <vrep_ros_plugin/ros_msg_builtin_io.h>
-#include <vrep_ros_plugin/ros_msg_io.h>
+#include <ros_msg_builtin_io.h>
+#include <ros_msg_io.h>
 
-#include "../include/v_repLib.h"
-#include "../include/scriptFunctionData.h"
-#include "../include/vrep_ros_plugin/vrep_ros_plugin.h"
+#include <v_repLib.h>
+#include <vrep_ros_plugin.h>
 
 #define PLUGIN_VERSION 5 // 5 since 3.3.1 (using stacks to exchange data with scripts)
 
@@ -135,7 +134,7 @@ void simExtROS_subscribe(SScriptCallBack *p)
     subscriberProxies[subscriberProxy->handle] = subscriberProxy;
 
     if(0) {}
-#include <vrep_ros_plugin/generated_sub.cpp>
+#include <sub.cpp>
     else
     {
         simSetLastError("simExtROS_subscribe", "unsupported message type. please edit and recompile ROS plugin");
@@ -315,7 +314,7 @@ void simExtROS_advertise(SScriptCallBack *p)
     publisherProxies[publisherProxy->handle] = publisherProxy;
 
     if(0) {}
-#include <vrep_ros_plugin/generated_adv.cpp>
+#include <adv.cpp>
     else
     {
         simSetLastError("simExtROS_advertise", "unsupported message type. please edit and recompile ROS plugin");
@@ -442,7 +441,7 @@ void simExtROS_publish(SScriptCallBack *p)
     simMoveStackItemToTop(p->stackID, 0);
 
     if(0) {}
-#include <vrep_ros_plugin/generated_pub.cpp>
+#include <pub.cpp>
     else
     {
         simSetLastError("simExtROS_publish", "unsupported message type. please edit and recompile ROS plugin");
