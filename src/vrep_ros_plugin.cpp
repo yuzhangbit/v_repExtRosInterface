@@ -1,5 +1,7 @@
 #include <vrep_ros_plugin.h>
 
+#include <tf/transform_broadcaster.h>
+
 #define PLUGIN_VERSION 5 // 5 since 3.3.1 (using stacks to exchange data with scripts)
 
 #define CONCAT(x,y,z) x y z
@@ -116,6 +118,14 @@ void publish(SScriptCallBack * p, const char * cmd, publish_in * in, publish_out
         simSetLastError(cmd, "unsupported message type. please edit and recompile ROS plugin");
         return;
     }
+}
+
+void sendTransform(SScriptCallBack * p, const char * cmd, sendTransform_in * in, sendTransform_out * out)
+{
+    tf::Transform t;
+    t.setOrigin(tf::Vector3(in->origin[0], in->origin[1], in->origin[2]));
+    t.setRotation(tf::Quaternion(in->orientation[0], in->orientation[1], in->orientation[2], in->orientation[3]));
+    tfbr->sendTransform(tf::StampedTransform(t, ros::Time::now(), in->parentFrame, in->childFrame));
 }
 
 bool initialize()

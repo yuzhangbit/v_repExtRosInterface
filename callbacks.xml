@@ -97,6 +97,28 @@
         <return>
         </return>
     </command>
+    <command name="sendTransform">
+        <description>Publish a TF transformation between frames.</description>
+        <see-also>
+            <!--command name="..." /-->
+        </see-also>
+        <params>
+            <param name="origin" type="table" item-type="float" size="3">
+                <description>frame origin</description>
+            </param>
+            <param name="orientation" type="table" item-type="float" size="4">
+                <description>frame orientation, expressed as quaternion</description>
+            </param>
+            <param name="parentFrame" type="string">
+                <description>frame id of parent frame</description>
+            </param>
+            <param name="childFrame" type="string">
+                <description>frame id of this frame</description>
+            </param>
+        </params>
+        <return>
+        </return>
+    </command>
     <script-function name="subscriberCallback">
         <description>Callback for ROS subscriber.</description>
         <params>
