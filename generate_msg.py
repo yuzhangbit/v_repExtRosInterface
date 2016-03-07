@@ -133,7 +133,7 @@ if mode == 'cpp':
 {{
     if(simPushTableOntoStack(stack) == -1)
     {{
-        std::cerr << "{wfn}: error: push table failed." << std::endl;
+        std::cerr << "{wfn}" << ": " << "error: " << "push table failed." << std::endl;
         return false;
     }}'''.format(ctype_=gt.ctype(), **locals())
     for n, t in fields.items():
@@ -141,55 +141,55 @@ if mode == 'cpp':
             wf += '''
     if(simPushStringOntoStack(stack, "{n}", 0) == -1)
     {{
-        std::cerr << "{wfn}: error: push table key ({n}) failed." << std::endl;
+        std::cerr << "{wfn}" << ": " << "error: " << "push table key (" << "{nf}" << ") failed." << std::endl;
         return false;
     }}
     if(simPushTableOntoStack(stack) == -1)
     {{
-        std::cerr << "{wfn}: error: push array table ({n}) failed." << std::endl;
+        std::cerr << "{wfn}" << ": " << "error: " << "push array table (" << "{nf}" << ") failed." << std::endl;
         return false;
     }}
     for(int i = 0; i < msg.{n}.size(); i++)
     {{
         if(!write__int32(i + 1, stack))
         {{
-            std::cerr << "{wfn}: error: push array table key " << i << " ({n}) failed." << std::endl;
+            std::cerr << "{wfn}" << ": " << "error: " << "push array table key " << i << " (" << "{nf}" << ") failed." << std::endl;
             return false;
         }}
         if(!write__{norm}(msg.{n}[i], stack))
         {{
-            std::cerr << "{wfn}: error: push array table value ({n}) failed." << std::endl;
+            std::cerr << "{wfn}" << ": " << "error: " << "push array table value (" << "{nf}" << ") failed." << std::endl;
             return false;
         }}
         if(simInsertDataIntoStackTable(stack) == -1)
         {{
-            std::cerr << "{wfn}: error: insert array table pair ({n}) failed." << std::endl;
+            std::cerr << "{wfn}" << ": " << "error: " << "insert array table pair (" << "{nf}" << ") failed." << std::endl;
             return false;
         }}
     }}
     if(simInsertDataIntoStackTable(stack) == -1)
     {{
-        std::cerr << "{wfn}: error: insert table pair ({n}) failed." << std::endl;
+        std::cerr << "{wfn}" << ": " << "error: " << "insert table pair (" << "{nf}" << ") failed." << std::endl;
         return false;
     }}
-'''.format(norm=t.normalized(), **locals())
+'''.format(norm=t.normalized(), nf='{}::{}'.format(gt.ctype(), n), **locals())
         else:
             wf += '''
     if(simPushStringOntoStack(stack, "{n}", 0) == -1)
     {{
-        std::cerr << "{wfn}: error: push table key ({n}) failed." << std::endl;
+        std::cerr << "{wfn}" << ": " << "error: " << "push table key (" << "{nf}" << ") failed." << std::endl;
         return false;
     }}
     if(!write__{norm}(msg.{n}, stack))
     {{
-        std::cerr << "{wfn}: error: push table field {n} of type {t} failed." << std::endl;
+        std::cerr << "{wfn}" << ": " << "error: " << "push table field " << "{nf}" << " of type " << "{t}" << " failed." << std::endl;
         return false;
     }}
     if(simInsertDataIntoStackTable(stack) == -1)
     {{
-        std::cerr << "{wfn}: error: insert table pair failed." << std::endl;
+        std::cerr << "{wfn}" << ": " << "error: " << "insert table pair " << "{nf}" << " failed." << std::endl;
         return false;
-    }}'''.format(norm=t.normalized(), **locals())
+    }}'''.format(norm=t.normalized(), nf='{}::{}'.format(gt.ctype(), n), **locals())
     wf += '''
     return true;
 }}
@@ -210,7 +210,7 @@ bool {rfn}(int stack, {ctype_} *msg)
     int i;
     if((i = simGetStackTableInfo(stack, 0)) != sim_stack_table_map)
     {{
-        std::cerr << "{rfn}: error: expected a table (simGetStackTableInfo returned " << i << ")." << std::endl;
+        std::cerr << "{rfn}" << ": " << "error: " << "expected a table (simGetStackTableInfo returned " << i << ")." << std::endl;
         return false;
     }}
 
@@ -241,7 +241,7 @@ bool {rfn}(int stack, {ctype_} *msg)
                 int i;
                 if((i = simGetStackTableInfo(stack, 0)) < 0)
                 {{
-                    std::cerr << "{rfn}: error: expected a array-table (simGetStackTableInfo returned " << i << ")." << std::endl;
+                    std::cerr << "{rfn}" << ": " << "error: " << "expected a array-table (simGetStackTableInfo returned " << i << ")." << std::endl;
                     return false;
                 }}
                 int sz1 = simGetStackSize(stack);
@@ -253,14 +253,14 @@ bool {rfn}(int stack, {ctype_} *msg)
                     int j;
                     if(!read__int32(stack, &j))
                     {{
-                        std::cerr << "{rfn}: error: not array table (" << str << ")." << std::endl;
+                        std::cerr << "{rfn}" << ": " << "error: " << "not array table (" << str << ")." << std::endl;
                         return false;
                     }}
                     simPopStackItem(stack, 1); // now stack top is value
                     {ctype_} v;
                     if(!read__{norm}(stack, &v))
                     {{
-                        std::cerr << "{rfn}: error: value is not {t} for key: " << str << "." << std::endl;
+                        std::cerr << "{rfn}" << ": " << "error: " << "value is not " << "{t}" << " for key: " << str << "." << std::endl;
                         return false;
                     }}
                     {ins}
@@ -273,14 +273,14 @@ bool {rfn}(int stack, {ctype_} *msg)
             {{
                 if(!read__{norm}(stack, &(msg->{n})))
                 {{
-                    std::cerr << "{rfn}: error: value is not {t} for key: " << str << "." << std::endl;
+                    std::cerr << "{rfn}" << ": " << "error: " << "value is not " << "{t}" << " for key: " << str << "." << std::endl;
                     return false;
                 }}
             }}'''.format(norm=t.normalized(), **locals())
     rf += '''
             else
             {{
-                std::cerr << "{rfn}: error: unexpected key: " << str << "." << std::endl;
+                std::cerr << "{rfn}" << ": " << "error: " << "unexpected key: " << str << "." << std::endl;
                 return false;
             }}
 
@@ -288,7 +288,7 @@ bool {rfn}(int stack, {ctype_} *msg)
         }}
         else
         {{
-            std::cerr << "{rfn}: error: malformed table (bad key type)." << std::endl;
+            std::cerr << "{rfn}" << ": " << "error: " << "malformed table (bad key type)." << std::endl;
             return false;
         }}
 
@@ -321,7 +321,7 @@ if mode == 'cpp':
             }}
             if(simCallScriptFunctionEx(proxy->topicCallback.scriptId, proxy->topicCallback.name.c_str(), stack) == -1)
             {{
-                std::cerr << "ros_callback__{norm}: error: call script failed." << std::endl;
+                std::cerr << "ros_callback__{norm}" << ": " << "error: " << "call script failed." << std::endl;
                 break;
             }}
         }}
