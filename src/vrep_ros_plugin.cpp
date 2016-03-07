@@ -24,29 +24,6 @@ LIBRARY vrepLib; // the V-REP library that we will dynamically load and bind
 
 ros::NodeHandle *nh = NULL;
 
-struct ScriptCallback
-{
-    int scriptId;
-    std::string name;
-};
-
-struct SubscriberProxy
-{
-    int handle;
-    std::string topicName;
-    std::string topicType;
-    ScriptCallback topicCallback;
-    ros::Subscriber subscriber;
-};
-
-struct PublisherProxy
-{
-    int handle;
-    std::string topicName;
-    std::string topicType;
-    ros::Publisher publisher;
-};
-
 int subscriberProxyNextHandle = 3562;
 int publisherProxyNextHandle = 7980;
 

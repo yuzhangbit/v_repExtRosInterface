@@ -1,4 +1,6 @@
 #include <vrep_ros_plugin/ros_msg_builtin_io.h>
+#include "../include/v_repLib.h"
+#include <iostream>
 
 bool read__bool(int stack, uint8_t *value)
 {
@@ -162,7 +164,7 @@ bool read__float32(int stack, float *value)
     }
 }
 
-bool read__float64(int stack, float *value)
+bool read__float64(int stack, double *value)
 {
     simDouble v;
     if(simGetStackDoubleValue(stack, &v) == 1)
@@ -373,6 +375,20 @@ bool write__float64(double value, int stack)
 {
     simDouble v = value;
     if(simPushDoubleOntoStack(stack, v) == -1)
+    {
+        std::cerr << "write__float64: error: push table value (data) failed." << std::endl;
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+}
+
+bool write__string(std::string value, int stack)
+{
+    const simChar *v = value.c_str();
+    if(simPushStringOntoStack(stack, v, 0) == -1)
     {
         std::cerr << "write__float64: error: push table value (data) failed." << std::endl;
         return false;

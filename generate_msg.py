@@ -116,13 +116,14 @@ with open(filename) as f:
 
 
 wfn = 'write__' + gt.normalized()
+wfn_sig = 'bool {wfn}(const {ctype_}& msg, int stack)'.format(ctype_=gt.ctype(), **locals())
 
 if mode == 'h':
-    print('bool {wfn}(const {ctype_}::ConstPtr& msg, int stack);'.format(ctype_=gt.ctype(), **locals()))
+    print('%s;' % wfn_sig)
 
 if mode == 'cpp':
     wf = '''
-bool {wfn}(const {ctype_}::ConstPtr& msg, int stack)
+{wfn_sig}
 {{
     if(simPushTableOntoStack(stack) == -1)
     {{
@@ -142,14 +143,14 @@ bool {wfn}(const {ctype_}::ConstPtr& msg, int stack)
         std::cerr << "{wfn}: error: push array table ({n}) failed." << std::endl;
         return false;
     }}
-    for(int i = 0; i < msg->{n}.size(); i++)
+    for(int i = 0; i < msg.{n}.size(); i++)
     {{
         if(!write__int32(i + 1, stack))
         {{
             std::cerr << "{wfn}: error: push array table key " << i << " ({n}) failed." << std::endl;
             return false;
         }}
-        if(!write__{norm}(msg->{n}, stack))
+        if(!write__{norm}(msg.{n}[i], stack))
         {{
             std::cerr << "{wfn}: error: push array table value ({n}) failed." << std::endl;
             return false;
@@ -168,7 +169,7 @@ bool {wfn}(const {ctype_}::ConstPtr& msg, int stack)
         std::cerr << "{wfn}: error: push table key ({n}) failed." << std::endl;
         return false;
     }}
-    if(!write__{norm}(msg->{n}, stack))
+    if(!write__{norm}(msg.{n}, stack))
     {{
         std::cerr << "{wfn}: error: push table field {n} of type {t} failed." << std::endl;
         return false;
@@ -186,9 +187,10 @@ bool {wfn}(const {ctype_}::ConstPtr& msg, int stack)
     print(wf)
 
 rfn = 'read__' + gt.normalized()
+rfn_sig = 'bool {rfn}(int stack, {ctype_} *msg)'.format(ctype_=gt.ctype(), **locals())
 
 if mode == 'h':
-    print('bool {rfn}(int stack, {ctype_} *msg);'.format(ctype_=gt.ctype(), **locals()))
+    print('%s;' % rfn_sig)
 
 if mode == 'cpp':
     rf = '''
@@ -284,19 +286,21 @@ bool {rfn}(int stack, {ctype_} *msg)
 '''.format(**locals())
     print(rf)
 
+cb_sig = 'void ros_callback__{norm}(const boost::shared_ptr<{ctype_} const>& msg, SubscriberProxy *proxy)'.format(norm=gt.normalized(), ctype_=gt.ctype(), **locals())
+
 if mode == 'h':
-    print('void ros_callback__{norm}(const {ctype_}::ConstPtr& msg, SubscriberProxy *proxy);\n'.format(norm=gt.normalized(), ctype_=gt.ctype(), **locals()))
+    print('%s;' % cb_sig)
 
 if mode == 'cpp':
     cb = '''
-void ros_callback__{norm}(const {ctype_}::ConstPtr& msg, SubscriberProxy *proxy)
+{cb_sig}
 {{
     int stack = simCreateStack();
     if(stack != -1)
     {{
         do
         {{
-            if(!write__{norm}(msg, stack))
+            if(!write__{norm}(*msg, stack))
             {{
                 break;
             }}
