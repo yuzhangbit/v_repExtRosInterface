@@ -12,11 +12,13 @@ Build steps:
 
     1) Generate stubs for Lua callbacks:
 
+        > mkdir generated
         > cd generated
         > python /path/to/v_repStubsGen/main-stacks.py -H stubs.h -C stubs.cpp -I vrep_ros_plugin.h ../callbacks.xml
         > cd ..
 
     2) Edit messages.txt if you need to include more ROS messages.
+       You need to specify the full message type, i.e. geometry_msgs/Twist rather than Twist.
 
     3) Generate code for reading/writing ROS messages:
 
@@ -39,4 +41,8 @@ Build steps:
     6) (optional) generate documentation with an XSLT processor:
 
         > saxon -s:callbacks.xml -a:on -o:reference.html
+
+        The callbacks.xml document can be viewed directly into the browser.
+        Any modern browser will do the XSLT processing automatically.
+
 
