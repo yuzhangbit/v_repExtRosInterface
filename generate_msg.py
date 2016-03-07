@@ -161,10 +161,15 @@ if mode == 'cpp':
             std::cerr << "{wfn}: error: push array table value ({n}) failed." << std::endl;
             return false;
         }}
+        if(simInsertDataIntoStackTable(stack) == -1)
+        {{
+            std::cerr << "{wfn}: error: insert array table pair ({n}) failed." << std::endl;
+            return false;
+        }}
     }}
     if(simInsertDataIntoStackTable(stack) == -1)
     {{
-        std::cerr << "{wfn}: error: insert table ({n}) failed." << std::endl;
+        std::cerr << "{wfn}: error: insert table pair ({n}) failed." << std::endl;
         return false;
     }}
 '''.format(norm=t.normalized(), **locals())
@@ -179,13 +184,13 @@ if mode == 'cpp':
     {{
         std::cerr << "{wfn}: error: push table field {n} of type {t} failed." << std::endl;
         return false;
-    }}'''.format(norm=t.normalized(), **locals())
-    wf += '''
+    }}
     if(simInsertDataIntoStackTable(stack) == -1)
     {{
-        std::cerr << "{wfn}: error: insert table failed." << std::endl;
+        std::cerr << "{wfn}: error: insert table pair failed." << std::endl;
         return false;
-    }}
+    }}'''.format(norm=t.normalized(), **locals())
+    wf += '''
     return true;
 }}
 
