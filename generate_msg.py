@@ -1,4 +1,5 @@
 from sys import argv, exit, stderr
+from subprocess import check_output
 import re
 
 # used to resolve messages specified without a package name
@@ -71,26 +72,13 @@ class TypeSpec:
             t += '[]'
         return t
 
-fields = {}
-
-if len(argv) != 5 or argv[1] not in ('cpp', 'h', 'adv', 'pub', 'sub'):
-    stderr.write('argument error\n')
-    exit(42)
-
-mode = argv[1]
-filename = argv[2]
-gt = TypeSpec(argv[3])
-
-# populate resolve_msg dictionary
-with open(argv[4]) as f:
-    for l in f.readlines():
-        l = l.strip()
-        pkg, n = l.split('/')
-        resolve_msg[n] = l
-
 # parse message definition
-with open(filename) as f:
-    for ln_orig in f.readlines():
+def get_msg_fields(msg_name):
+    fields = {}
+
+    out = check_output(['rosmsg', 'show', '-r', msg_name])
+
+    for ln_orig in out.split('\n'):
         ln = ln_orig.strip()
 
         if '#' in ln:
@@ -116,101 +104,101 @@ with open(filename) as f:
             n = tokens[1]
             fields[n] = t
         else:
-            print('error: unrecognized line:')
-            print(ln_orig1)
-            exit(3)
+            raise ValueError('unrecognized line: ' + ln_orig1)
 
+    return fields
 
-wfn = 'write__' + gt.normalized()
-wfn_sig = 'bool {wfn}(const {ctype_}& msg, int stack)'.format(ctype_=gt.ctype(), **locals())
+def generate_h(gt, fields, d, f):
+    s = '''
+bool write__{norm}(const {ctype}& msg, int stack);
+bool read__{norm}(int stack, {ctype} *msg);
+void ros_callback__{norm}(const boost::shared_ptr<{ctype} const>& msg, SubscriberProxy *proxy);
+'''.format(**d)
+    f.write(s)
 
-if mode == 'h':
-    print('%s;' % wfn_sig)
-
-if mode == 'cpp':
+def generate_cpp(gt, fields, d, f):
     wf = '''
-{wfn_sig}
+bool write__{norm}(const {ctype}& msg, int stack)
 {{
     if(simPushTableOntoStack(stack) == -1)
     {{
-        std::cerr << "{wfn}" << ": " << "error: " << "push table failed." << std::endl;
+        std::cerr << "write__{norm}" << ": " << "error: " << "push table failed." << std::endl;
         return false;
-    }}'''.format(ctype_=gt.ctype(), **locals())
+    }}'''.format(**d)
     for n, t in fields.items():
+        d1 = d
+        d1['n'] = n
+        d1['t'] = t
+        d1['ctype1'] = t.ctype()
+        d1['nf'] = '{}::{}'.format(gt.ctype(), n)
+        d1['norm1'] = t.normalized()
         if t.array:
             wf += '''
     if(simPushStringOntoStack(stack, "{n}", 0) == -1)
     {{
-        std::cerr << "{wfn}" << ": " << "error: " << "push table key (" << "{nf}" << ") failed." << std::endl;
+        std::cerr << "write__{norm}" << ": " << "error: " << "push table key (" << "{nf}" << ") failed." << std::endl;
         return false;
     }}
     if(simPushTableOntoStack(stack) == -1)
     {{
-        std::cerr << "{wfn}" << ": " << "error: " << "push array table (" << "{nf}" << ") failed." << std::endl;
+        std::cerr << "write__{norm}" << ": " << "error: " << "push array table (" << "{nf}" << ") failed." << std::endl;
         return false;
     }}
     for(int i = 0; i < msg.{n}.size(); i++)
     {{
         if(!write__int32(i + 1, stack))
         {{
-            std::cerr << "{wfn}" << ": " << "error: " << "push array table key " << i << " (" << "{nf}" << ") failed." << std::endl;
+            std::cerr << "write__{norm}" << ": " << "error: " << "push array table key " << i << " (" << "{nf}" << ") failed." << std::endl;
             return false;
         }}
-        if(!write__{norm}(msg.{n}[i], stack))
+        if(!write__{norm1}(msg.{n}[i], stack))
         {{
-            std::cerr << "{wfn}" << ": " << "error: " << "push array table value (" << "{nf}" << ") failed." << std::endl;
+            std::cerr << "write__{norm}" << ": " << "error: " << "push array table value (" << "{nf}" << ") failed." << std::endl;
             return false;
         }}
         if(simInsertDataIntoStackTable(stack) == -1)
         {{
-            std::cerr << "{wfn}" << ": " << "error: " << "insert array table pair (" << "{nf}" << ") failed." << std::endl;
+            std::cerr << "write__{norm}" << ": " << "error: " << "insert array table pair (" << "{nf}" << ") failed." << std::endl;
             return false;
         }}
     }}
     if(simInsertDataIntoStackTable(stack) == -1)
     {{
-        std::cerr << "{wfn}" << ": " << "error: " << "insert table pair (" << "{nf}" << ") failed." << std::endl;
+        std::cerr << "write__{norm}" << ": " << "error: " << "insert table pair (" << "{nf}" << ") failed." << std::endl;
         return false;
     }}
-'''.format(norm=t.normalized(), nf='{}::{}'.format(gt.ctype(), n), **locals())
+'''.format(**d1)
         else:
             wf += '''
     if(simPushStringOntoStack(stack, "{n}", 0) == -1)
     {{
-        std::cerr << "{wfn}" << ": " << "error: " << "push table key (" << "{nf}" << ") failed." << std::endl;
+        std::cerr << "write__{norm}" << ": " << "error: " << "push table key (" << "{nf}" << ") failed." << std::endl;
         return false;
     }}
-    if(!write__{norm}(msg.{n}, stack))
+    if(!write__{norm1}(msg.{n}, stack))
     {{
-        std::cerr << "{wfn}" << ": " << "error: " << "push table field " << "{nf}" << " of type " << "{t}" << " failed." << std::endl;
+        std::cerr << "write__{norm}" << ": " << "error: " << "push table field " << "{nf}" << " of type " << "{t}" << " failed." << std::endl;
         return false;
     }}
     if(simInsertDataIntoStackTable(stack) == -1)
     {{
-        std::cerr << "{wfn}" << ": " << "error: " << "insert table pair " << "{nf}" << " failed." << std::endl;
+        std::cerr << "write__{norm}" << ": " << "error: " << "insert table pair " << "{nf}" << " failed." << std::endl;
         return false;
-    }}'''.format(norm=t.normalized(), nf='{}::{}'.format(gt.ctype(), n), **locals())
+    }}'''.format(**d1)
     wf += '''
     return true;
 }}
 
-'''.format(**locals())
-    print(wf)
+'''.format(**d)
+    f.write(wf)
 
-rfn = 'read__' + gt.normalized()
-rfn_sig = 'bool {rfn}(int stack, {ctype_} *msg)'.format(ctype_=gt.ctype(), **locals())
-
-if mode == 'h':
-    print('%s;' % rfn_sig)
-
-if mode == 'cpp':
     rf = '''
-bool {rfn}(int stack, {ctype_} *msg)
+bool read__{norm}(int stack, {ctype} *msg)
 {{
     int i;
     if((i = simGetStackTableInfo(stack, 0)) != sim_stack_table_map)
     {{
-        std::cerr << "{rfn}" << ": " << "error: " << "expected a table (simGetStackTableInfo returned " << i << ")." << std::endl;
+        std::cerr << "read__{norm}" << ": " << "error: " << "expected a table (simGetStackTableInfo returned " << i << ")." << std::endl;
         return false;
     }}
 
@@ -228,20 +216,26 @@ bool {rfn}(int stack, {ctype_} *msg)
         {{
             simPopStackItem(stack, 1); // now stack top is value
 
-            if(0) {{}}'''.format(ctype_=gt.ctype(), **locals())
+            if(0) {{}}'''.format(**d)
     for n, t in fields.items():
+        d1 = d
+        d1['n'] = n
+        d1['t'] = t
+        d1['ctype1'] = t.ctype()
+        d1['nf'] = '{}::{}'.format(gt.ctype(), n)
+        d1['norm1'] = t.normalized()
         if t.array:
             if t.array_size:
-                ins = 'msg->{n}[i] = (v);'.format(**locals())
+                ins = 'msg->{n}[i] = (v);'.format(**d1)
             else:
-                ins = 'msg->{n}.push_back(v);'.format(**locals())
+                ins = 'msg->{n}.push_back(v);'.format(**d1)
             rf += '''
             else if(strcmp(str, "{n}") == 0)
             {{
                 int i;
                 if((i = simGetStackTableInfo(stack, 0)) < 0)
                 {{
-                    std::cerr << "{rfn}" << ": " << "error: " << "expected a array-table (simGetStackTableInfo returned " << i << ")." << std::endl;
+                    std::cerr << "read__{norm}" << ": " << "error: " << "expected a array-table (simGetStackTableInfo returned " << i << ")." << std::endl;
                     return false;
                 }}
                 int sz1 = simGetStackSize(stack);
@@ -253,34 +247,34 @@ bool {rfn}(int stack, {ctype_} *msg)
                     int j;
                     if(!read__int32(stack, &j))
                     {{
-                        std::cerr << "{rfn}" << ": " << "error: " << "not array table (" << str << ")." << std::endl;
+                        std::cerr << "read__{norm}" << ": " << "error: " << "not array table (" << str << ")." << std::endl;
                         return false;
                     }}
                     simPopStackItem(stack, 1); // now stack top is value
-                    {ctype_} v;
-                    if(!read__{norm}(stack, &v))
+                    {ctype1} v;
+                    if(!read__{norm1}(stack, &v))
                     {{
-                        std::cerr << "{rfn}" << ": " << "error: " << "value is not " << "{t}" << " for key: " << str << "." << std::endl;
+                        std::cerr << "read__{norm}" << ": " << "error: " << "value is not " << "{t}" << " for key: " << str << "." << std::endl;
                         return false;
                     }}
                     {ins}
                     simPopStackItem(stack, 1);
                 }}
-            }}'''.format(norm=t.normalized(), ctype_=t.ctype(), **locals())
+            }}'''.format(ins=ins, **d1)
         else:
             rf += '''
             else if(strcmp(str, "{n}") == 0)
             {{
-                if(!read__{norm}(stack, &(msg->{n})))
+                if(!read__{norm1}(stack, &(msg->{n})))
                 {{
-                    std::cerr << "{rfn}" << ": " << "error: " << "value is not " << "{t}" << " for key: " << str << "." << std::endl;
+                    std::cerr << "read__{norm}" << ": " << "error: " << "value is not " << "{t}" << " for key: " << str << "." << std::endl;
                     return false;
                 }}
-            }}'''.format(norm=t.normalized(), **locals())
+            }}'''.format(**d1)
     rf += '''
             else
             {{
-                std::cerr << "{rfn}" << ": " << "error: " << "unexpected key: " << str << "." << std::endl;
+                std::cerr << "read__{norm}" << ": " << "error: " << "unexpected key: " << str << "." << std::endl;
                 return false;
             }}
 
@@ -288,7 +282,7 @@ bool {rfn}(int stack, {ctype_} *msg)
         }}
         else
         {{
-            std::cerr << "{rfn}" << ": " << "error: " << "malformed table (bad key type)." << std::endl;
+            std::cerr << "read__{norm}" << ": " << "error: " << "malformed table (bad key type)." << std::endl;
             return false;
         }}
 
@@ -298,17 +292,11 @@ bool {rfn}(int stack, {ctype_} *msg)
     return true;
 }}
 
-'''.format(**locals())
-    print(rf)
+'''.format(**d)
+    f.write(rf)
 
-cb_sig = 'void ros_callback__{norm}(const boost::shared_ptr<{ctype_} const>& msg, SubscriberProxy *proxy)'.format(norm=gt.normalized(), ctype_=gt.ctype(), **locals())
-
-if mode == 'h':
-    print('%s;' % cb_sig)
-
-if mode == 'cpp':
     cb = '''
-{cb_sig}
+void ros_callback__{norm}(const boost::shared_ptr<{ctype} const>& msg, SubscriberProxy *proxy)
 {{
     int stack = simCreateStack();
     if(stack != -1)
@@ -330,33 +318,98 @@ if mode == 'cpp':
     }}
 }}
 
-'''.format(norm=gt.normalized(), ctype_=gt.ctype(), **locals())
-    print(cb)
+'''.format(**d)
+    f.write(cb)
 
-if mode == 'pub':
+def generate_pub(gt, fields, d, f):
     p = '''    else if(publisherProxy->topicType == "{fn}")
     {{
-        {ctype_} msg;
+        {ctype} msg;
         if(!read__{norm}(p->stackID, &msg))
         {{
             simSetLastError("simExtROS_publish", "invalid message format (check stderr)");
             return;
         }}
         publisherProxy->publisher.publish(msg);
-    }}'''.format(fn=gt.fullname, norm=gt.normalized(), ctype_=gt.ctype(), **locals())
-    print(p)
+    }}
+'''.format(**d)
+    f.write(p)
 
-if mode == 'adv':
+def generate_adv(gt, fields, d, f):
     p = '''    else if(topicType == "{fn}")
     {{
-        publisherProxy->publisher = nh->advertise<{ctype_}>(topicName, queueSize, latch);
-    }}'''.format(fn=gt.fullname, norm=gt.normalized(), ctype_=gt.ctype(), **locals())
-    print(p)
+        publisherProxy->publisher = nh->advertise<{ctype}>(topicName, queueSize, latch);
+    }}
+'''.format(**d)
+    f.write(p)
 
-if mode == 'sub':
+def generate_sub(gt, fields, d, f):
     p = '''    else if(topicType == "{fn}")
     {{
-        subscriberProxy->subscriber = nh->subscribe<{ctype_}>(topicName, queueSize, boost::bind(ros_callback__{norm}, _1, subscriberProxy));
-    }}'''.format(fn=gt.fullname, norm=gt.normalized(), ctype_=gt.ctype(), **locals())
-    print(p)
+        subscriberProxy->subscriber = nh->subscribe<{ctype}>(topicName, queueSize, boost::bind(ros_callback__{norm}, _1, subscriberProxy));
+    }}
+'''.format(**d)
+    f.write(p)
 
+def main(argc, argv):
+    if argc != 2:
+        stderr.write('argument error\n')
+        exit(42)
+
+    # populate resolve_msg dictionary
+    with open(argv[1]) as f:
+        for l in f.readlines():
+            l = l.strip()
+            pkg, n = l.split('/')
+            resolve_msg[n] = l
+
+    f_cpp = open('generated/ros_msg_io.cpp', 'w')
+    f_h = open('generated/ros_msg_io.h', 'w')
+    f_adv = open('generated/adv.cpp', 'w')
+    f_pub = open('generated/pub.cpp', 'w')
+    f_sub = open('generated/sub.cpp', 'w')
+
+    f_cpp.write('''#include <ros_msg_builtin_io.h>
+#include <ros_msg_io.h>
+#include <v_repLib.h>
+
+''')
+    f_h.write('''#ifndef VREP_ROS_PLUGIN__ROS_MSG_IO__H
+#define VREP_ROS_PLUGIN__ROS_MSG_IO__H
+
+#include <ros/ros.h>
+#include <vrep_ros_plugin.h>
+
+''') 
+
+    print('Generating header...')
+    # for each msg include msg header
+    for msg in resolve_msg.values():
+        f_h.write('#include <%s.h>\n' % msg)
+    f_h.write('\n')
+
+    # for each msg generate cpp, h, adv, pub, sub code
+    for msg in resolve_msg.values():
+        print('Generating code for message %s...' % msg)
+        gt = TypeSpec(msg)
+        fields = get_msg_fields(msg)
+        d = {'norm': gt.normalized(), 'ctype': gt.ctype(), 'fn': gt.fullname}
+        generate_cpp(gt, fields, d, f_cpp)
+        generate_h(gt, fields, d, f_h)
+        generate_adv(gt, fields, d, f_adv)
+        generate_pub(gt, fields, d, f_pub)
+        generate_sub(gt, fields, d, f_sub)
+
+    f_h.write('''
+
+#endif // VREP_ROS_PLUGIN__ROS_MSG_IO__H
+''')
+
+    f_cpp.close()
+    f_h.close()
+    f_adv.close()
+    f_pub.close()
+    f_sub.close()
+
+if __name__ == '__main__':
+    main(len(argv), argv)
