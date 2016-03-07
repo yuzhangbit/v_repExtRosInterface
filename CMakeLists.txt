@@ -17,7 +17,7 @@ link_directories("/opt/ros/hydro/lib")
 link_directories("/opt/ros/indigo/lib")
 link_directories("/opt/ros/jade/lib")
 
-add_library(v_repExtRos src/vrep_ros_plugin.cpp generated/stubs.cpp src/cpp_io.cpp src/ros_msg_builtin_io.cpp generated/ros_msg_io.cpp src/scriptFunctionData.cpp src/scriptFunctionDataItem.cpp src/v_repLib.cpp)
+add_library(v_repExtRos src/vrep_ros_plugin.cpp generated/stubs.cpp src/cpp_io.cpp src/ros_msg_builtin_io.cpp generated/ros_msg_io.cpp src/v_repLib.cpp)
 
 add_dependencies(v_repExtRos ${catkin_EXPORTED_TARGETS})
 target_link_libraries(v_repExtRos
