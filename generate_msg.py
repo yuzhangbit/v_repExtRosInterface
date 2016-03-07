@@ -1,11 +1,14 @@
 from sys import argv, exit, stderr
 import re
 
+# used to resolve messages specified without a package name
+# name -> pkg/name
 resolve_msg = {}
 
 def is_identifier(s):
     return re.match('^[a-zA-Z_][a-zA-Z0-9_]*$', s)
 
+# parse a type specification, such as Header, geometry_msgs/Point, or string[12]
 class TypeSpec:
     def __init__(self, s):
         self.array = False
@@ -36,9 +39,11 @@ class TypeSpec:
             self.package = tok[0]
             self.mtype = tok[1]
 
+    # normalize fullname to C identifier (replace / with __)
     def normalized(self):
         return ('{}__'.format(self.package) if not self.builtin else '') + self.mtype
 
+    # get C++ type declaration
     def ctype(self):
         if self.builtin:
             if self.mtype == 'bool': return 'uint8_t'
@@ -76,12 +81,14 @@ mode = argv[1]
 filename = argv[2]
 gt = TypeSpec(argv[3])
 
+# populate resolve_msg dictionary
 with open(argv[4]) as f:
     for l in f.readlines():
         l = l.strip()
         pkg, n = l.split('/')
         resolve_msg[n] = l
 
+# parse message definition
 with open(filename) as f:
     for ln_orig in f.readlines():
         ln = ln_orig.strip()
@@ -111,8 +118,6 @@ with open(filename) as f:
         else:
             print('error: unrecognized line:')
             print(ln_orig1)
-            print(ln)
-            print(tokens)
             exit(3)
 
 
