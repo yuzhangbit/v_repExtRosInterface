@@ -1,17 +1,3 @@
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <vector>
-#include <map>
-
-#include <boost/lexical_cast.hpp>
-
-#include <ros/ros.h>
-
-#include <ros_msg_builtin_io.h>
-#include <ros_msg_io.h>
-
-#include <v_repLib.h>
 #include <vrep_ros_plugin.h>
 
 #define PLUGIN_VERSION 5 // 5 since 3.3.1 (using stacks to exchange data with scripts)
@@ -29,108 +15,14 @@ int publisherProxyNextHandle = 7980;
 std::map<int, SubscriberProxy *> subscriberProxies;
 std::map<int, PublisherProxy *> publisherProxies;
 
-void simExtROS_subscribe(SScriptCallBack *p)
+void subscribe(SScriptCallBack * p, const char * cmd, subscribe_in * in, subscribe_out * out)
 {
-    // input arguments:
-
-    std::string topicName;
-    std::string topicType;
-    std::string topicCallback;
-    simInt queueSize = 0;
-
-    // read input argument count from stack:
-
-    int numArgs = simGetStackSize(p->stackID);
-    int totalArgs = 4;
-    int requiredArgs = 3;
-
-    if(numArgs < requiredArgs || numArgs > totalArgs)
-    {
-        simSetLastError("simExtROS_subscribe", "wrong number of arguments");
-        return;
-    }
-
-    // read input argument values from stack:
-
-    if(numArgs >= 1)
-    {
-        simMoveStackItemToTop(p->stackID, 0);
-        int strSize;
-        simChar *str = simGetStackStringValue(p->stackID, &strSize);
-        if(strSize == -1)
-        {
-            simSetLastError("simExtROS_subscribe", "internal error reading argument 1");
-            return;
-        }
-        if(str == NULL && strSize == 0)
-        {
-            simSetLastError("simExtROS_subscribe", "type error: argument 1 must be a string");
-            return;
-        }
-        topicName = std::string(str);
-        simReleaseBuffer(str);
-    }
-
-    if(numArgs >= 2)
-    {
-        simMoveStackItemToTop(p->stackID, 0);
-        int strSize;
-        simChar *str = simGetStackStringValue(p->stackID, &strSize);
-        if(strSize == -1)
-        {
-            simSetLastError("simExtROS_subscribe", "internal error reading argument 2");
-            return;
-        }
-        if(str == NULL && strSize == 0)
-        {
-            simSetLastError("simExtROS_subscribe", "type error: argument 2 must be a string");
-            return;
-        }
-        topicType = std::string(str);
-        simReleaseBuffer(str);
-    }
-
-    if(numArgs >= 3)
-    {
-        simMoveStackItemToTop(p->stackID, 0);
-        int strSize;
-        simChar *str = simGetStackStringValue(p->stackID, &strSize);
-        if(strSize == -1)
-        {
-            simSetLastError("simExtROS_subscribe", "internal error reading argument 3");
-            return;
-        }
-        if(str == NULL && strSize == 0)
-        {
-            simSetLastError("simExtROS_subscribe", "type error: argument 3 must be a string");
-            return;
-        }
-        topicCallback = std::string(str);
-        simReleaseBuffer(str);
-    }
-
-    if(numArgs >= 4)
-    {
-        simMoveStackItemToTop(p->stackID, 0);
-        simInt ret = simGetStackInt32Value(p->stackID, &queueSize);
-        if(ret == -1)
-        {
-            simSetLastError("simExtROS_subscribe", "internal error reading argument 4");
-            return;
-        }
-        if(ret == 0)
-        {
-            simSetLastError("simExtROS_subscribe", "type error: argument 4 must be a number");
-            return;
-        }
-    }
-
     SubscriberProxy *subscriberProxy = new SubscriberProxy();
     subscriberProxy->handle = subscriberProxyNextHandle++;
-    subscriberProxy->topicName = topicName;
-    subscriberProxy->topicType = topicType;
+    subscriberProxy->topicName = in->topicName;
+    subscriberProxy->topicType = in->topicType;
     subscriberProxy->topicCallback.scriptId = p->scriptID;
-    subscriberProxy->topicCallback.name = topicCallback;
+    subscriberProxy->topicCallback.name = in->topicCallback;
     subscriberProxies[subscriberProxy->handle] = subscriberProxy;
 
     if(0) {}
@@ -147,170 +39,29 @@ void simExtROS_subscribe(SScriptCallBack *p)
         return;
     }
 
-    // write output arguments to stack:
-
-    simPopStackItem(p->stackID, 0);
-
-    {
-        int ret = simPushInt32OntoStack(p->stackID, subscriberProxy->handle);
-        if(ret == -1)
-        {
-            simSetLastError("simExtROS_subscribe", "internal error writing output argument 1");
-            return;
-        }
-    }
+    out->subscriberHandle = subscriberProxy->handle;
 }
 
-void simExtROS_shutdownSubscriber(SScriptCallBack *p)
+void shutdownSubscriber(SScriptCallBack * p, const char * cmd, shutdownSubscriber_in * in, shutdownSubscriber_out * out)
 {
-    // input arguments:
-
-    simInt subscriberHandle;
-
-    // read input argument count from stack:
-
-    int numArgs = simGetStackSize(p->stackID);
-    int totalArgs = 1;
-    int requiredArgs = 1;
-
-    if(numArgs < requiredArgs || numArgs > totalArgs)
-    {
-        simSetLastError("simExtROS_shutdownSubscriber", "wrong number of arguments");
-        return;
-    }
-
-    // read input argument values from stack:
-
-    if(numArgs >= 1)
-    {
-        simMoveStackItemToTop(p->stackID, 0);
-        simInt ret = simGetStackInt32Value(p->stackID, &subscriberHandle);
-        if(ret == -1)
-        {
-            simSetLastError("simExtROS_shutdownSubscriber", "internal error reading argument 1");
-            return;
-        }
-        if(ret == 0)
-        {
-            simSetLastError("simExtROS_shutdownSubscriber", "type error: argument 1 must be a number");
-            return;
-        }
-    }
-
-    if(subscriberProxies.find(subscriberHandle) == subscriberProxies.end())
+    if(subscriberProxies.find(in->subscriberHandle) == subscriberProxies.end())
     {
         simSetLastError("simExtROS_shutdownSubscriber", "invalid subscriber handle");
         return;
     }
 
-    SubscriberProxy *subscriberProxy = subscriberProxies[subscriberHandle];
+    SubscriberProxy *subscriberProxy = subscriberProxies[in->subscriberHandle];
     subscriberProxy->subscriber.shutdown();
     subscriberProxies.erase(subscriberProxy->handle);
     delete subscriberProxy;
-
-    // write output arguments to stack:
-
-    {
-    }
 }
 
-void simExtROS_advertise(SScriptCallBack *p)
+void advertise(SScriptCallBack * p, const char * cmd, advertise_in * in, advertise_out * out)
 {
-    // input arguments:
-
-    std::string topicName;
-    std::string topicType;
-    simInt queueSize = 0;
-    simBool latch = false;
-
-    // read input argument count from stack:
-
-    int numArgs = simGetStackSize(p->stackID);
-    int totalArgs = 4;
-    int requiredArgs = 2;
-
-    if(numArgs < requiredArgs || numArgs > totalArgs)
-    {
-        simSetLastError("simExtROS_advertise", "wrong number of arguments");
-        return;
-    }
-
-    // read input argument values from stack:
-
-    if(numArgs >= 1)
-    {
-        simMoveStackItemToTop(p->stackID, 0);
-        int strSize;
-        simChar *str = simGetStackStringValue(p->stackID, &strSize);
-        if(strSize == -1)
-        {
-            simSetLastError("simExtROS_advertise", "internal error reading argument 1");
-            return;
-        }
-        if(str == NULL && strSize == 0)
-        {
-            simSetLastError("simExtROS_advertise", "type error: argument 1 must be a string");
-            return;
-        }
-        topicName = std::string(str);
-        simReleaseBuffer(str);
-    }
-
-    if(numArgs >= 2)
-    {
-        simMoveStackItemToTop(p->stackID, 0);
-        int strSize;
-        simChar *str = simGetStackStringValue(p->stackID, &strSize);
-        if(strSize == -1)
-        {
-            simSetLastError("simExtROS_advertise", "internal error reading argument 2");
-            return;
-        }
-        if(str == NULL && strSize == 0)
-        {
-            simSetLastError("simExtROS_advertise", "type error: argument 2 must be a string");
-            return;
-        }
-        topicType = std::string(str);
-        simReleaseBuffer(str);
-    }
-
-    if(numArgs >= 3)
-    {
-        simMoveStackItemToTop(p->stackID, 0);
-        simInt ret = simGetStackInt32Value(p->stackID, &queueSize);
-        if(ret == -1)
-        {
-            simSetLastError("simExtROS_advertise", "internal error reading argument 3");
-            return;
-        }
-        if(ret == 0)
-        {
-            simSetLastError("simExtROS_advertise", "type error: argument 3 must be a number");
-            return;
-        }
-    }
-
-    if(numArgs >= 4)
-    {
-        simMoveStackItemToTop(p->stackID, 0);
-        simInt ret = simGetStackBoolValue(p->stackID, &latch);
-        if(ret == -1)
-        {
-            simSetLastError("simExtROS_advertise", "internal error reading argument 4");
-            return;
-        }
-        if(ret == 0)
-        {
-            simSetLastError("simExtROS_advertise", "type error: argument 4 must be a bool");
-            return;
-        }
-    }
-
     PublisherProxy *publisherProxy = new PublisherProxy();
     publisherProxy->handle = publisherProxyNextHandle++;
-    publisherProxy->topicName = topicName;
-    publisherProxy->topicType = topicType;
+    publisherProxy->topicName = in->topicName;
+    publisherProxy->topicType = in->topicType;
     publisherProxies[publisherProxy->handle] = publisherProxy;
 
     if(0) {}
@@ -327,116 +78,32 @@ void simExtROS_advertise(SScriptCallBack *p)
         return;
     }
 
-    // write output arguments to stack:
-
-    simPopStackItem(p->stackID, 0);
-
-    {
-        int ret = simPushInt32OntoStack(p->stackID, publisherProxy->handle);
-        if(ret == -1)
-        {
-            simSetLastError("simExtROS_advertise", "internal error writing output argument 1");
-            return;
-        }
-    }
+    out->publisherHandle = publisherProxy->handle;
 }
 
-void simExtROS_shutdownPublisher(SScriptCallBack *p)
+void shutdownPublisher(SScriptCallBack * p, const char * cmd, shutdownPublisher_in * in, shutdownPublisher_out * out)
 {
-    // input arguments:
-
-    simInt publisherHandle;
-
-    // read input argument count from stack:
-
-    int numArgs = simGetStackSize(p->stackID);
-    int totalArgs = 1;
-    int requiredArgs = 1;
-
-    if(numArgs < requiredArgs || numArgs > totalArgs)
-    {
-        simSetLastError("simExtROS_shutdownPublisher", "wrong number of arguments");
-        return;
-    }
-
-    // read input argument values from stack:
-
-    if(numArgs >= 1)
-    {
-        simMoveStackItemToTop(p->stackID, 0);
-        simInt ret = simGetStackInt32Value(p->stackID, &publisherHandle);
-        if(ret == -1)
-        {
-            simSetLastError("simExtROS_shutdownPublisher", "internal error reading argument 1");
-            return;
-        }
-        if(ret == 0)
-        {
-            simSetLastError("simExtROS_shutdownPublisher", "type error: argument 1 must be a number");
-            return;
-        }
-    }
-
-    if(publisherProxies.find(publisherHandle) == publisherProxies.end())
+    if(publisherProxies.find(in->publisherHandle) == publisherProxies.end())
     {
         simSetLastError("simExtROS_shutdownPublisher", "invalid publisher handle");
         return;
     }
 
-    PublisherProxy *publisherProxy = publisherProxies[publisherHandle];
+    PublisherProxy *publisherProxy = publisherProxies[in->publisherHandle];
     publisherProxy->publisher.shutdown();
     publisherProxies.erase(publisherProxy->handle);
     delete publisherProxy;
-
-    // write output arguments to stack:
-
-    {
-    }
 }
 
-void simExtROS_publish(SScriptCallBack *p)
+void publish(SScriptCallBack * p, const char * cmd, publish_in * in, publish_out * out)
 {
-    // input arguments:
-
-    simInt publisherHandle;
-
-    // read input argument count from stack:
-
-    int numArgs = simGetStackSize(p->stackID);
-    int totalArgs = 2;
-    int requiredArgs = 2;
-
-    if(numArgs < requiredArgs || numArgs > totalArgs)
-    {
-        simSetLastError("simExtROS_publish", "wrong number of arguments");
-        return;
-    }
-
-    // read input argument values from stack:
-
-    if(numArgs >= 1)
-    {
-        simMoveStackItemToTop(p->stackID, 0);
-        simInt ret = simGetStackInt32Value(p->stackID, &publisherHandle);
-        if(ret == -1)
-        {
-            simSetLastError("simExtROS_publish", "internal error reading argument 1");
-            return;
-        }
-        if(ret == 0)
-        {
-            simSetLastError("simExtROS_publish", "type error: argument 1 must be a number");
-            return;
-        }
-    }
-
-    if(publisherProxies.find(publisherHandle) == publisherProxies.end())
+    if(publisherProxies.find(in->publisherHandle) == publisherProxies.end())
     {
         simSetLastError("simExtROS_publish", "invalid publisher handle");
         return;
     }
 
-    PublisherProxy *publisherProxy = publisherProxies[publisherHandle];
+    PublisherProxy *publisherProxy = publisherProxies[in->publisherHandle];
 
     simMoveStackItemToTop(p->stackID, 0);
 
@@ -446,11 +113,6 @@ void simExtROS_publish(SScriptCallBack *p)
     {
         simSetLastError("simExtROS_publish", "unsupported message type. please edit and recompile ROS plugin");
         return;
-    }
-
-    // write output arguments to stack:
-
-    {
     }
 }
 
@@ -471,71 +133,6 @@ bool initialize()
 void shutdown()
 {
     ros::shutdown();
-}
-
-bool registerScriptStuff()
-{
-    {
-        int ret = simRegisterScriptCallbackFunction("simExtROS_subscribe@ROS", "number subscriberHandle=simExtROS_subscribe(string topicName, string topicType, string callback, number queueSize=0)", simExtROS_subscribe);
-        if(ret == 0)
-        {
-            std::cout << "Plugin 'ROS': warning: replaced function simExtROS_subscribe" << std::endl;
-        }
-        else if(ret == -1)
-        {
-            std::cout << "Plugin 'ROS': error: failed to register function simExtROS_subscribe" << std::endl;
-            return false;
-        }
-    }
-    {
-        int ret = simRegisterScriptCallbackFunction("simExtROS_shutdownSubscriber@ROS", "simExtROS_shutdownSubscriber(number subscriberHandle)", simExtROS_shutdownSubscriber);
-        if(ret == 0)
-        {
-            std::cout << "Plugin 'ROS': warning: replaced function simExtROS_shutdownSubscriber" << std::endl;
-        }
-        else if(ret == -1)
-        {
-            std::cout << "Plugin 'ROS': error: failed to register function simExtROS_shutdownSubscriber" << std::endl;
-            return false;
-        }
-    }
-    {
-        int ret = simRegisterScriptCallbackFunction("simExtROS_advertise@ROS", "number publisherHandle=simExtROS_advertise(string topicName, string topicType, bool latch=false, number queueSize=0)", simExtROS_advertise);
-        if(ret == 0)
-        {
-            std::cout << "Plugin 'ROS': warning: replaced function simExtROS_advertise" << std::endl;
-        }
-        else if(ret == -1)
-        {
-            std::cout << "Plugin 'ROS': error: failed to register function simExtROS_advertise" << std::endl;
-            return false;
-        }
-    }
-    {
-        int ret = simRegisterScriptCallbackFunction("simExtROS_shutdownPublisher@ROS", "simExtROS_shutdownPublisher(number publisherHandle)", simExtROS_shutdownPublisher);
-        if(ret == 0)
-        {
-            std::cout << "Plugin 'ROS': warning: replaced function simExtROS_shutdownPublisher" << std::endl;
-        }
-        else if(ret == -1)
-        {
-            std::cout << "Plugin 'ROS': error: failed to register function simExtROS_shutdownPublisher" << std::endl;
-            return false;
-        }
-    }
-    {
-        int ret = simRegisterScriptCallbackFunction("simExtROS_publish@ROS", "simExtROS_publish(number publisherHandle, table message)", simExtROS_publish);
-        if(ret == 0)
-        {
-            std::cout << "Plugin 'ROS': warning: replaced function simExtROS_publish" << std::endl;
-        }
-        else if(ret == -1)
-        {
-            std::cout << "Plugin 'ROS': error: failed to register function simExtROS_publish" << std::endl;
-            return false;
-        }
-    }
-    return true;
 }
 
 // This is the plugin start routine (called just once, just after the plugin was loaded):

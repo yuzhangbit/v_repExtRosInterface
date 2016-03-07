@@ -87,9 +87,12 @@
             <param name="publisherHandle" type="int">
                 <description>the publisher handle</description>
             </param>
-            <param name="message" type="table">
+            <param name="message" type="table" skip="true">
                 <description>the message to publish</description>
             </param>
+            <!-- don't read 'message' param from stack, and don't clear stack
+                 after input param parsing, so that 'message' is still on stack
+                 when calling the C++ callback -->
         </params>
         <return>
         </return>

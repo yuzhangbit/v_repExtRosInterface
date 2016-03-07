@@ -336,17 +336,17 @@ def generate_pub(gt, fields, d, f):
     f.write(p)
 
 def generate_adv(gt, fields, d, f):
-    p = '''    else if(topicType == "{fn}")
+    p = '''    else if(in->topicType == "{fn}")
     {{
-        publisherProxy->publisher = nh->advertise<{ctype}>(topicName, queueSize, latch);
+        publisherProxy->publisher = nh->advertise<{ctype}>(in->topicName, in->queueSize, in->latch);
     }}
 '''.format(**d)
     f.write(p)
 
 def generate_sub(gt, fields, d, f):
-    p = '''    else if(topicType == "{fn}")
+    p = '''    else if(in->topicType == "{fn}")
     {{
-        subscriberProxy->subscriber = nh->subscribe<{ctype}>(topicName, queueSize, boost::bind(ros_callback__{norm}, _1, subscriberProxy));
+        subscriberProxy->subscriber = nh->subscribe<{ctype}>(in->topicName, in->queueSize, boost::bind(ros_callback__{norm}, _1, subscriberProxy));
     }}
 '''.format(**d)
     f.write(p)

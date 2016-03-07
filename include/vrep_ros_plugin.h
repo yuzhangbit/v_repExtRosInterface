@@ -3,6 +3,16 @@
 #ifndef V_REPEXTROS_H
 #define V_REPEXTROS_H
 
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+#include <map>
+
+#include <boost/lexical_cast.hpp>
+
+#include <ros/ros.h>
+
 #define VREP_DLLEXPORT extern "C"
 
 // The 3 required entry points of the V-REP plugin:
@@ -32,5 +42,12 @@ struct PublisherProxy
     std::string topicType;
     ros::Publisher publisher;
 };
+
+#include <stubs.h>
+#include <cpp_io.h>
+#include <ros_msg_builtin_io.h>
+#include <ros_msg_io.h>
+
+#include <v_repLib.h>
 
 #endif
