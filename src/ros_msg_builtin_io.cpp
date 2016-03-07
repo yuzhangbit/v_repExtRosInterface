@@ -390,7 +390,7 @@ bool write__string(std::string value, int stack)
     const simChar *v = value.c_str();
     if(simPushStringOntoStack(stack, v, 0) == -1)
     {
-        std::cerr << "write__float64: error: push table value (data) failed." << std::endl;
+        std::cerr << "write__string: error: push table value (data) failed." << std::endl;
         return false;
     }
     else
