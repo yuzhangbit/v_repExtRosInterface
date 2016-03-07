@@ -8,12 +8,14 @@ def is_identifier(s):
 
 class TypeSpec:
     def __init__(self, s):
-        s = re.sub(r'\[\d+\]', '[]', s) # strip array size specifier
-        if s[-2:] == '[]':
+        self.array = False
+        self.array_size = None
+        m = re.match(r'^(.*)\[(\d*)\]$', s)
+        if m:
             self.array = True
-            s = s[:-2]
-        else:
-            self.array = False
+            s = m.group(1)
+            if len(m.group(2)) > 0:
+                self.array_size = int(m.group(2))
         # perform substitutions:
         if s in resolve_msg: s = resolve_msg[s]
         if s == 'byte': s = 'int8' # deprecated
@@ -95,7 +97,6 @@ with open(filename) as f:
         ln_orig1 = ln
 
         ln = ln.replace('=',' = ')
-        ln = re.sub(r'\[\d+\]', '[]', ln) # strip array size specifier
 
         tokens = ln.split()
 
@@ -220,6 +221,10 @@ bool {rfn}(int stack, {ctype_} *msg)
             if(0) {{}}'''.format(ctype_=gt.ctype(), **locals())
     for n, t in fields.items():
         if t.array:
+            if t.array_size:
+                ins = 'msg->{n}[i] = (v);'.format(**locals())
+            else:
+                ins = 'msg->{n}.push_back(v);'.format(**locals())
             rf += '''
             else if(strcmp(str, "{n}") == 0)
             {{
@@ -248,7 +253,7 @@ bool {rfn}(int stack, {ctype_} *msg)
                         std::cerr << "{rfn}: error: value is not {t} for key: " << str << "." << std::endl;
                         return false;
                     }}
-                    msg->{n}.push_back(v);
+                    {ins}
                     simPopStackItem(stack, 1);
                 }}
             }}'''.format(norm=t.normalized(), ctype_=t.ctype(), **locals())
