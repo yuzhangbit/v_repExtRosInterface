@@ -29,13 +29,13 @@ void subscribe(SScriptCallBack * p, const char * cmd, subscribe_in * in, subscri
 #include <sub.cpp>
     else
     {
-        simSetLastError("simExtROS_subscribe", "unsupported message type. please edit and recompile ROS plugin");
+        simSetLastError(cmd, "unsupported message type. please edit and recompile ROS plugin");
         return;
     }
 
     if(!subscriberProxy->subscriber)
     {
-        simSetLastError("simExtROS_subscribe", "failed creation of ROS subscriber");
+        simSetLastError(cmd, "failed creation of ROS subscriber");
         return;
     }
 
@@ -46,7 +46,7 @@ void shutdownSubscriber(SScriptCallBack * p, const char * cmd, shutdownSubscribe
 {
     if(subscriberProxies.find(in->subscriberHandle) == subscriberProxies.end())
     {
-        simSetLastError("simExtROS_shutdownSubscriber", "invalid subscriber handle");
+        simSetLastError(cmd, "invalid subscriber handle");
         return;
     }
 
@@ -68,13 +68,13 @@ void advertise(SScriptCallBack * p, const char * cmd, advertise_in * in, adverti
 #include <adv.cpp>
     else
     {
-        simSetLastError("simExtROS_advertise", "unsupported message type. please edit and recompile ROS plugin");
+        simSetLastError(cmd, "unsupported message type. please edit and recompile ROS plugin");
         return;
     }
 
     if(!publisherProxy->publisher)
     {
-        simSetLastError("simExtROS_advertise", "failed creation of ROS publisher");
+        simSetLastError(cmd, "failed creation of ROS publisher");
         return;
     }
 
@@ -85,7 +85,7 @@ void shutdownPublisher(SScriptCallBack * p, const char * cmd, shutdownPublisher_
 {
     if(publisherProxies.find(in->publisherHandle) == publisherProxies.end())
     {
-        simSetLastError("simExtROS_shutdownPublisher", "invalid publisher handle");
+        simSetLastError(cmd, "invalid publisher handle");
         return;
     }
 
@@ -99,7 +99,7 @@ void publish(SScriptCallBack * p, const char * cmd, publish_in * in, publish_out
 {
     if(publisherProxies.find(in->publisherHandle) == publisherProxies.end())
     {
-        simSetLastError("simExtROS_publish", "invalid publisher handle");
+        simSetLastError(cmd, "invalid publisher handle");
         return;
     }
 
@@ -111,7 +111,7 @@ void publish(SScriptCallBack * p, const char * cmd, publish_in * in, publish_out
 #include <pub.cpp>
     else
     {
-        simSetLastError("simExtROS_publish", "unsupported message type. please edit and recompile ROS plugin");
+        simSetLastError(cmd, "unsupported message type. please edit and recompile ROS plugin");
         return;
     }
 }
