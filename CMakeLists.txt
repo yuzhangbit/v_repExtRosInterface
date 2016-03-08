@@ -6,16 +6,28 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 catkin_package(
-               CATKIN_DEPENDS roscpp rosconsole cv_bridge image_transport tf brics_actuator roslib actionlib_msgs control_msgs diagnostic_msgs geometry_msgs map_msgs nav_msgs pcl_msgs sensor_msgs shape_msgs std_msgs tf2_geometry_msgs tf2_msgs tf2_sensor_msgs trajectory_msgs visualization_msgs
-               DEPENDS roscpp rosconsole cv_bridge image_transport tf brics_actuator roslib actionlib_msgs control_msgs diagnostic_msgs geometry_msgs map_msgs nav_msgs pcl_msgs sensor_msgs shape_msgs std_msgs tf2_geometry_msgs tf2_msgs tf2_sensor_msgs trajectory_msgs visualization_msgs)
+   CATKIN_DEPENDS roscpp rosconsole cv_bridge image_transport tf brics_actuator roslib actionlib_msgs control_msgs diagnostic_msgs geometry_msgs map_msgs nav_msgs pcl_msgs sensor_msgs shape_msgs std_msgs tf2_geometry_msgs tf2_msgs tf2_sensor_msgs trajectory_msgs visualization_msgs
+   DEPENDS roscpp rosconsole cv_bridge image_transport tf brics_actuator roslib actionlib_msgs control_msgs diagnostic_msgs geometry_msgs map_msgs nav_msgs pcl_msgs sensor_msgs shape_msgs std_msgs tf2_geometry_msgs tf2_msgs tf2_sensor_msgs trajectory_msgs visualization_msgs)
 
-include_directories(include generated ${catkin_INCLUDE_DIRS})
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/generated)
+
+include_directories(include ${CMAKE_BINARY_DIR}/generated ${catkin_INCLUDE_DIRS})
 
 link_directories("/opt/ros/fuerte/lib")
 link_directories("/opt/ros/groovy/lib")
 link_directories("/opt/ros/hydro/lib")
 link_directories("/opt/ros/indigo/lib")
 link_directories("/opt/ros/jade/lib")
+
+add_custom_command(OUTPUT
+    ${CMAKE_BINARY_DIR}/generated/adv.cpp ${CMAKE_BINARY_DIR}/generated/pub.cpp ${CMAKE_BINARY_DIR}/generated/ros_msg_io.cpp ${CMAKE_BINARY_DIR}/generated/ros_msg_io.h ${CMAKE_BINARY_DIR}/generated/ros_srv_io.cpp ${CMAKE_BINARY_DIR}/generated/ros_srv_io.h ${CMAKE_BINARY_DIR}/generated/srvcall.cpp ${CMAKE_BINARY_DIR}/generated/srvcli.cpp ${CMAKE_BINARY_DIR}/generated/srvsrv.cpp ${CMAKE_BINARY_DIR}/generated/sub.cpp
+    COMMAND python ${CMAKE_SOURCE_DIR}/tools/generate_ros_stuff.py ${CMAKE_SOURCE_DIR}/meta/messages.txt ${CMAKE_SOURCE_DIR}/meta/services.txt ${CMAKE_BINARY_DIR}/generated/
+    DEPENDS ${CMAKE_SOURCE_DIR}/meta/messages.txt ${CMAKE_SOURCE_DIR}/meta/services.txt)
+
+add_custom_command(OUTPUT
+    ${CMAKE_BINARY_DIR}/generated/stubs.cpp ${CMAKE_BINARY_DIR}/generated/stubs.h
+    COMMAND python ${CMAKE_SOURCE_DIR}/../../../v_repStubsGen/main-stacks.py -H ${CMAKE_BINARY_DIR}/generated/stubs.h -C ${CMAKE_BINARY_DIR}/generated/stubs.cpp -I vrep_ros_plugin.h ${CMAKE_SOURCE_DIR}/callbacks.xml
+    DEPENDS ${CMAKE_SOURCE_DIR}/callbacks.xml)
 
 add_library(v_repExtRos src/vrep_ros_plugin.cpp generated/stubs.cpp src/cpp_io.cpp src/ros_msg_builtin_io.cpp generated/ros_msg_io.cpp generated/ros_srv_io.cpp src/v_repLib.cpp)
 

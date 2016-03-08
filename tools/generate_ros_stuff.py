@@ -492,12 +492,16 @@ def generate_srv_cpp(gt, fields_in, fields_out, d, f):
     generate_srv_cb_cpp(gt, fields_in, fields_out, d, f)
 
 def main(argc, argv):
-    if argc < 2 or argc > 3:
+    if argc != 4:
         stderr.write('argument error\n')
         exit(42)
 
+    messages_file = argv[1]
+    services_file = argv[2]
+    output_dir = argv[3]
+
     # populate resolve_msg dictionary
-    with open(argv[1]) as f:
+    with open(messages_file) as f:
         for l in f.readlines():
             l = l.strip()
             pkg, n = l.split('/')
@@ -505,22 +509,21 @@ def main(argc, argv):
 
     # and srv list
     srv_list = set()
-    if argc > 2:
-        with open(argv[2]) as f:
-            for l in f.readlines():
-                srv_list.add(l.strip())
+    with open(services_file) as f:
+        for l in f.readlines():
+            srv_list.add(l.strip())
 
-    f_msg_cpp = open('generated/ros_msg_io.cpp', 'w')
-    f_msg_h = open('generated/ros_msg_io.h', 'w')
-    f_msg_adv = open('generated/adv.cpp', 'w')
-    f_msg_pub = open('generated/pub.cpp', 'w')
-    f_msg_sub = open('generated/sub.cpp', 'w')
+    f_msg_cpp = open(output_dir + '/ros_msg_io.cpp', 'w')
+    f_msg_h = open(output_dir + '/ros_msg_io.h', 'w')
+    f_msg_adv = open(output_dir + '/adv.cpp', 'w')
+    f_msg_pub = open(output_dir + '/pub.cpp', 'w')
+    f_msg_sub = open(output_dir + '/sub.cpp', 'w')
 
-    f_srv_cpp = open('generated/ros_srv_io.cpp', 'w')
-    f_srv_h = open('generated/ros_srv_io.h', 'w')
-    f_srv_call = open('generated/srvcall.cpp', 'w')
-    f_srv_cli = open('generated/srvcli.cpp', 'w')
-    f_srv_srv = open('generated/srvsrv.cpp', 'w')
+    f_srv_cpp = open(output_dir + '/ros_srv_io.cpp', 'w')
+    f_srv_h = open(output_dir + '/ros_srv_io.h', 'w')
+    f_srv_call = open(output_dir + '/srvcall.cpp', 'w')
+    f_srv_cli = open(output_dir + '/srvcli.cpp', 'w')
+    f_srv_srv = open(output_dir + '/srvsrv.cpp', 'w')
 
     f_msg_cpp.write('''#include <ros_msg_builtin_io.h>
 #include <ros_msg_io.h>
