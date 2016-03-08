@@ -13,6 +13,13 @@ Build steps:
     1) Edit meta/messages.txt and meta/services.txt if you need to include more ROS messages/services.
        You need to specify the full message/service type, i.e. geometry_msgs/Twist rather than Twist.
 
+    2) obtain v_repStubsGen:
+
+        > mkdir external
+        > cd external
+        > git clone https://github.com/fferri/v_repStubsGen.git
+        > export PYTHONPATH=$PYTHONPATH:$PWD
+
     2) Compile the plugin using catkin tools:
 
         > catkin build
