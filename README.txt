@@ -17,12 +17,12 @@ Build steps:
         > python /path/to/v_repStubsGen/main-stacks.py -H stubs.h -C stubs.cpp -I vrep_ros_plugin.h ../callbacks.xml
         > cd ..
 
-    2) Edit messages.txt if you need to include more ROS messages.
-       You need to specify the full message type, i.e. geometry_msgs/Twist rather than Twist.
+    2) Edit messages.txt and services.txt if you need to include more ROS messages/services.
+       You need to specify the full message/service type, i.e. geometry_msgs/Twist rather than Twist.
 
     3) Generate code for reading/writing ROS messages:
 
-        > python generate_msg.py messages.txt
+        > python gen_ros_stuff.py messages.txt services.txt
 
     4) Now, in the directory generated/ you should have the following files:
 
@@ -33,6 +33,11 @@ Build steps:
         - sub.cpp
         - ros_msg_io.cpp
         - ros_msg_io.h
+        - ros_srv_io.cpp
+        - ros_srv_io.h
+        - srvcall.cpp
+        - srvcli.cpp
+        - srvsrv.cpp
 
     5) Compile the plugin using catkin tools:
 
