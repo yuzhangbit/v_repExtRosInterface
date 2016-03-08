@@ -61,7 +61,6 @@ struct ServiceServerProxy
 };
 
 #include <stubs.h>
-#include <cpp_io.h>
 #include <ros_msg_builtin_io.h>
 #include <ros_msg_io.h>
 #include <ros_srv_io.h>
