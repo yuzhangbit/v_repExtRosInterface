@@ -43,10 +43,28 @@ struct PublisherProxy
     ros::Publisher publisher;
 };
 
+struct ServiceClientProxy
+{
+    int handle;
+    std::string serviceName;
+    std::string serviceType;
+    ros::ServiceClient client;
+};
+
+struct ServiceServerProxy
+{
+    int handle;
+    std::string serviceName;
+    std::string serviceType;
+    ScriptCallback serviceCallback;
+    ros::ServiceServer server;
+};
+
 #include <stubs.h>
 #include <cpp_io.h>
 #include <ros_msg_builtin_io.h>
 #include <ros_msg_io.h>
+#include <ros_srv_io.h>
 
 #include <v_repLib.h>
 

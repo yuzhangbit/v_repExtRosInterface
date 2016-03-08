@@ -21,7 +21,7 @@ class TypeSpec:
             if len(m.group(2)) > 0:
                 self.array_size = int(m.group(2))
         # perform substitutions:
-        if s in resolve_msg: s = resolve_msg[s]
+        s = resolve_msg.get(s, s)
         if s == 'byte': s = 'int8' # deprecated
         if s == 'char': s = 'uint8' # deprecated
         # check builtins:
@@ -72,15 +72,11 @@ class TypeSpec:
             t += '[]'
         return t
 
-# parse message definition
-def get_msg_fields(msg_name):
+# parse msg / srv definition
+def get_fields(lines):
     fields = {}
 
-    out = check_output(['rosmsg', 'show', '-r', msg_name])
-
-    for ln_orig in out.split('\n'):
-        ln = ln_orig.strip()
-
+    for ln in lines:
         if '#' in ln:
             # strip comments
             ln = ln[:ln.find('#')].strip()
@@ -108,15 +104,44 @@ def get_msg_fields(msg_name):
 
     return fields
 
-def generate_h(gt, fields, d, f):
+# parse msg definition
+def get_msg_fields(msg_name):
+    lines = [ln.strip() for ln in check_output(['rosmsg', 'show', '-r', msg_name]).split('\n')]
+    return get_fields(lines)
+
+# parse srv definition
+def get_srv_fields(srv_name):
+    lines = [ln.strip() for ln in check_output(['rossrv', 'show', '-r', srv_name]).split('\n')]
+    sep = '---'
+    if sep not in lines:
+        raise ValueError('bad srv definition')
+    i = lines.index(sep)
+    return get_fields(lines[:i]), get_fields(lines[i+1:])
+
+def generate_msg_wr_h(gt, fields, d, f):
     s = '''
 bool write__{norm}(const {ctype}& msg, int stack);
+'''.format(**d)
+    f.write(s)
+
+def generate_msg_rd_h(gt, fields, d, f):
+    s = '''
 bool read__{norm}(int stack, {ctype} *msg);
+'''.format(**d)
+    f.write(s)
+
+def generate_msg_cb_h(gt, fields, d, f):
+    s = '''
 void ros_callback__{norm}(const boost::shared_ptr<{ctype} const>& msg, SubscriberProxy *proxy);
 '''.format(**d)
     f.write(s)
 
-def generate_cpp(gt, fields, d, f):
+def generate_msg_h(gt, fields, d, f):
+    generate_msg_wr_h(gt, fields, d, f)
+    generate_msg_rd_h(gt, fields, d, f)
+    generate_msg_cb_h(gt, fields, d, f)
+
+def generate_msg_wr_cpp(gt, fields, d, f):
     wf = '''
 bool write__{norm}(const {ctype}& msg, int stack)
 {{
@@ -192,6 +217,7 @@ bool write__{norm}(const {ctype}& msg, int stack)
 '''.format(**d)
     f.write(wf)
 
+def generate_msg_rd_cpp(gt, fields, d, f):
     rf = '''
 bool read__{norm}(int stack, {ctype} *msg)
 {{
@@ -295,6 +321,7 @@ bool read__{norm}(int stack, {ctype} *msg)
 '''.format(**d)
     f.write(rf)
 
+def generate_msg_cb_cpp(gt, fields, d, f):
     cb = '''
 void ros_callback__{norm}(const boost::shared_ptr<{ctype} const>& msg, SubscriberProxy *proxy)
 {{
@@ -321,7 +348,12 @@ void ros_callback__{norm}(const boost::shared_ptr<{ctype} const>& msg, Subscribe
 '''.format(**d)
     f.write(cb)
 
-def generate_pub(gt, fields, d, f):
+def generate_msg_cpp(gt, fields, d, f):
+    generate_msg_wr_cpp(gt, fields, d, f)
+    generate_msg_rd_cpp(gt, fields, d, f)
+    generate_msg_cb_cpp(gt, fields, d, f)
+
+def generate_msg_pub(gt, fields, d, f):
     p = '''    else if(publisherProxy->topicType == "{fn}")
     {{
         {ctype} msg;
@@ -335,7 +367,7 @@ def generate_pub(gt, fields, d, f):
 '''.format(**d)
     f.write(p)
 
-def generate_adv(gt, fields, d, f):
+def generate_msg_adv(gt, fields, d, f):
     p = '''    else if(in->topicType == "{fn}")
     {{
         publisherProxy->publisher = nh->advertise<{ctype}>(in->topicName, in->queueSize, in->latch);
@@ -343,7 +375,7 @@ def generate_adv(gt, fields, d, f):
 '''.format(**d)
     f.write(p)
 
-def generate_sub(gt, fields, d, f):
+def generate_msg_sub(gt, fields, d, f):
     p = '''    else if(in->topicType == "{fn}")
     {{
         subscriberProxy->subscriber = nh->subscribe<{ctype}>(in->topicName, in->queueSize, boost::bind(ros_callback__{norm}, _1, subscriberProxy));
@@ -351,8 +383,116 @@ def generate_sub(gt, fields, d, f):
 '''.format(**d)
     f.write(p)
 
+def generate_srv_cli(gt, fields_in, fields_out, d, f):
+    p = '''    else if(in->serviceType == "{fn}")
+    {{
+        serviceClientProxy->client = nh->serviceClient<{ctype}>(in->serviceName);
+    }}
+'''.format(**d)
+    f.write(p)
+
+def generate_srv_srv(gt, fields_in, fields_out, d, f):
+    p = '''    else if(in->serviceType == "{fn}")
+    {{
+        serviceServerProxy->server = nh->advertiseService<{ctype}::Request, {ctype}::Response>(in->serviceName, boost::bind(ros_srv_callback__{norm}, _1, _2, serviceServerProxy));
+    }}
+'''.format(**d)
+    f.write(p)
+
+def generate_srv_call(gt, fields_in, fields_out, d, f):
+    p = '''    else if(serviceClientProxy->serviceType == "{fn}")
+    {{
+        {ctype} srv;
+        if(!read__{norm}Request(p->stackID, &(srv.request)))
+        {{
+            simSetLastError(cmd, "invalid request format (check stderr)");
+            return;
+        }}
+        if(serviceClientProxy->client.call(srv))
+        {{
+            if(!write__{norm}Response(srv.response, p->stackID))
+            {{
+                simSetLastError(cmd, "failed to write response to stack (check stderr)");
+                return;
+            }}
+            out->result = true;
+        }}
+        else
+        {{
+            simSetLastError(cmd, "failed to call service {fn}");
+            return;
+        }}
+    }}
+'''.format(**d)
+    f.write(p)
+
+def generate_srv_cb_h(gt, fields_in, fields_out, d, f):
+    p = '''
+bool ros_srv_callback__{norm}({ctype}::Request& req, {ctype}::Response& res, ServiceServerProxy *proxy);
+'''.format(**d)
+    f.write(p)
+
+def generate_srv_cb_cpp(gt, fields_in, fields_out, d, f):
+    p = '''
+bool ros_srv_callback__{norm}({ctype}::Request& req, {ctype}::Response& res, ServiceServerProxy *proxy)
+{{
+    bool ret = false;
+    int stack = simCreateStack();
+    if(stack != -1)
+    {{
+        do
+        {{
+            if(!write__{norm}Request(req, stack))
+            {{
+                std::cerr << "ros_srv_callback__{norm}" << ": " << "error: " << "write request failed." << std::endl;
+                break;
+            }}
+            if(simCallScriptFunctionEx(proxy->serviceCallback.scriptId, proxy->serviceCallback.name.c_str(), stack) == -1)
+            {{
+                std::cerr << "ros_srv_callback__{norm}" << ": " << "error: " << "call script failed." << std::endl;
+                break;
+            }}
+            if(!read__{norm}Response(stack, &res))
+            {{
+                std::cerr << "ros_srv_callback__{norm}" << ": " << "error: " << "read response failed." << std::endl;
+                break;
+            }}
+            ret = true;
+        }}
+        while(0);
+        simReleaseStack(stack);
+    }}
+    return ret;
+}}
+'''.format(**d)
+    f.write(p)
+
+def generate_srv_h(gt, fields_in, fields_out, d, f):
+    ctype = d['ctype']
+    norm = d['norm']
+    for k, v in {'Request': fields_in, 'Response': fields_out}.items():
+        d['ctype'] = ctype + k
+        d['norm'] = norm + k
+        generate_msg_wr_h(gt, v, d, f)
+        generate_msg_rd_h(gt, v, d, f)
+    d['ctype'] = ctype
+    d['norm'] = norm
+    generate_srv_cb_h(gt, fields_in, fields_out, d, f)
+
+def generate_srv_cpp(gt, fields_in, fields_out, d, f):
+    ctype = d['ctype']
+    norm = d['norm']
+    for k, v in {'Request': fields_in, 'Response': fields_out}.items():
+        d['ctype'] = ctype + k
+        d['norm'] = norm + k
+        generate_msg_wr_cpp(gt, v, d, f)
+        generate_msg_rd_cpp(gt, v, d, f)
+    d['ctype'] = ctype
+    d['norm'] = norm
+    generate_srv_cb_cpp(gt, fields_in, fields_out, d, f)
+
 def main(argc, argv):
-    if argc != 2:
+    if argc < 2 or argc > 3:
         stderr.write('argument error\n')
         exit(42)
 
@@ -363,30 +503,60 @@ def main(argc, argv):
             pkg, n = l.split('/')
             resolve_msg[n] = l
 
-    f_cpp = open('generated/ros_msg_io.cpp', 'w')
-    f_h = open('generated/ros_msg_io.h', 'w')
-    f_adv = open('generated/adv.cpp', 'w')
-    f_pub = open('generated/pub.cpp', 'w')
-    f_sub = open('generated/sub.cpp', 'w')
+    # and srv list
+    srv_list = set()
+    if argc > 2:
+        with open(argv[2]) as f:
+            for l in f.readlines():
+                srv_list.add(l.strip())
 
-    f_cpp.write('''#include <ros_msg_builtin_io.h>
+    f_msg_cpp = open('generated/ros_msg_io.cpp', 'w')
+    f_msg_h = open('generated/ros_msg_io.h', 'w')
+    f_msg_adv = open('generated/adv.cpp', 'w')
+    f_msg_pub = open('generated/pub.cpp', 'w')
+    f_msg_sub = open('generated/sub.cpp', 'w')
+
+    f_srv_cpp = open('generated/ros_srv_io.cpp', 'w')
+    f_srv_h = open('generated/ros_srv_io.h', 'w')
+    f_srv_call = open('generated/srvcall.cpp', 'w')
+    f_srv_cli = open('generated/srvcli.cpp', 'w')
+    f_srv_srv = open('generated/srvsrv.cpp', 'w')
+
+    f_msg_cpp.write('''#include <ros_msg_builtin_io.h>
 #include <ros_msg_io.h>
 #include <v_repLib.h>
 
 ''')
-    f_h.write('''#ifndef VREP_ROS_PLUGIN__ROS_MSG_IO__H
+    f_msg_h.write('''#ifndef VREP_ROS_PLUGIN__ROS_MSG_IO__H
 #define VREP_ROS_PLUGIN__ROS_MSG_IO__H
 
 #include <ros/ros.h>
 #include <vrep_ros_plugin.h>
 
 ''') 
+    f_srv_cpp.write('''#include <ros_msg_builtin_io.h>
+#include <ros_msg_io.h>
+#include <ros_srv_io.h>
+#include <v_repLib.h>
+
+''')
+    f_srv_h.write('''#ifndef VREP_ROS_PLUGIN__ROS_SRV_IO__H
+#define VREP_ROS_PLUGIN__ROS_SRV_IO__H
+
+#include <ros/ros.h>
+#include <vrep_ros_plugin.h>
+
+''') 
+
 
     print('Generating header...')
-    # for each msg include msg header
-    for msg in resolve_msg.values():
-        f_h.write('#include <%s.h>\n' % msg)
-    f_h.write('\n')
+    # for each msg/srv include corresponding header
+    for msg in set(resolve_msg.values()):
+        f_msg_h.write('#include <%s.h>\n' % msg)
+    f_msg_h.write('\n')
+    for srv in srv_list:
+        f_srv_h.write('#include <%s.h>\n' % srv)
+    f_srv_h.write('\n')
 
     # for each msg generate cpp, h, adv, pub, sub code
     for msg in resolve_msg.values():
@@ -394,22 +564,43 @@ def main(argc, argv):
         gt = TypeSpec(msg)
         fields = get_msg_fields(msg)
         d = {'norm': gt.normalized(), 'ctype': gt.ctype(), 'fn': gt.fullname}
-        generate_cpp(gt, fields, d, f_cpp)
-        generate_h(gt, fields, d, f_h)
-        generate_adv(gt, fields, d, f_adv)
-        generate_pub(gt, fields, d, f_pub)
-        generate_sub(gt, fields, d, f_sub)
+        generate_msg_cpp(gt, fields, d, f_msg_cpp)
+        generate_msg_h(gt, fields, d, f_msg_h)
+        generate_msg_adv(gt, fields, d, f_msg_adv)
+        generate_msg_pub(gt, fields, d, f_msg_pub)
+        generate_msg_sub(gt, fields, d, f_msg_sub)
 
-    f_h.write('''
+    for srv in srv_list:
+        print('Generating code for service %s...' % srv)
+        gt = TypeSpec(srv)
+        fields_in, fields_out = get_srv_fields(srv)
+        d = {'norm': gt.normalized(), 'ctype': gt.ctype(), 'fn': gt.fullname}
+        generate_srv_cli(gt, fields_in, fields_out, d, f_srv_cli)
+        generate_srv_srv(gt, fields_in, fields_out, d, f_srv_srv)
+        generate_srv_call(gt, fields_in, fields_out, d, f_srv_call)
+        generate_srv_h(gt, fields_in, fields_out, d, f_srv_h)
+        generate_srv_cpp(gt, fields_in, fields_out, d, f_srv_cpp)
+
+    f_msg_h.write('''
 
 #endif // VREP_ROS_PLUGIN__ROS_MSG_IO__H
 ''')
+    f_srv_h.write('''
 
-    f_cpp.close()
-    f_h.close()
-    f_adv.close()
-    f_pub.close()
-    f_sub.close()
+#endif // VREP_ROS_PLUGIN__ROS_SRV_IO__H
+''')
+
+    f_msg_cpp.close()
+    f_msg_h.close()
+    f_msg_adv.close()
+    f_msg_pub.close()
+    f_msg_sub.close()
+
+    f_srv_cpp.close()
+    f_srv_h.close()
+    f_srv_call.close()
+    f_srv_cli.close()
+    f_srv_srv.close()
 
 if __name__ == '__main__':
     main(len(argv), argv)

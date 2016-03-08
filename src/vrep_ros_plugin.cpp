@@ -15,9 +15,13 @@ tf::TransformBroadcaster *tfbr = NULL;
 
 int subscriberProxyNextHandle = 3562;
 int publisherProxyNextHandle = 7980;
+int serviceClientProxyNextHandle = 26856;
+int serviceServerProxyNextHandle = 53749;
 
 std::map<int, SubscriberProxy *> subscriberProxies;
 std::map<int, PublisherProxy *> publisherProxies;
+std::map<int, ServiceClientProxy *> serviceClientProxies;
+std::map<int, ServiceServerProxy *> serviceServerProxies;
 
 void subscribe(SScriptCallBack * p, const char * cmd, subscribe_in * in, subscribe_out * out)
 {
@@ -118,6 +122,107 @@ void publish(SScriptCallBack * p, const char * cmd, publish_in * in, publish_out
         simSetLastError(cmd, "unsupported message type. please edit and recompile ROS plugin");
         return;
     }
+}
+
+void serviceClient(SScriptCallBack * p, const char * cmd, serviceClient_in * in, serviceClient_out * out)
+{
+    ServiceClientProxy *serviceClientProxy = new ServiceClientProxy();
+    serviceClientProxy->handle = serviceClientProxyNextHandle++;
+    serviceClientProxy->serviceName = in->serviceName;
+    serviceClientProxy->serviceType = in->serviceType;
+    serviceClientProxies[serviceClientProxy->handle] = serviceClientProxy;
+
+    if(0) {}
+#include <srvcli.cpp>
+    else
+    {
+        simSetLastError(cmd, "unsupported service type. please edit and recompile ROS plugin");
+        return;
+    }
+
+    if(!serviceClientProxy->client)
+    {
+        simSetLastError(cmd, "failed creation of ROS service client");
+        return;
+    }
+
+    out->serviceClientHandle = serviceClientProxy->handle;
+}
+
+void shutdownServiceClient(SScriptCallBack * p, const char * cmd, shutdownServiceClient_in * in, shutdownServiceClient_out * out)
+{
+    if(serviceClientProxies.find(in->serviceClientHandle) == serviceClientProxies.end())
+    {
+        simSetLastError(cmd, "invalid service client handle");
+        return;
+    }
+
+    ServiceClientProxy *serviceClientProxy = serviceClientProxies[in->serviceClientHandle];
+    serviceClientProxy->client.shutdown();
+    serviceClientProxies.erase(serviceClientProxy->handle);
+    delete serviceClientProxy;
+}
+
+void call(SScriptCallBack * p, const char * cmd, call_in * in, call_out * out)
+{
+    if(serviceClientProxies.find(in->serviceClientHandle) == serviceClientProxies.end())
+    {
+        simSetLastError(cmd, "invalid service client handle");
+        return;
+    }
+
+    ServiceClientProxy *serviceClientProxy = serviceClientProxies[in->serviceClientHandle];
+
+    simMoveStackItemToTop(p->stackID, 0);
+
+    if(0) {}
+#include <srvcall.cpp>
+    else
+    {
+        simSetLastError(cmd, "unsupported service type. please edit and recompile ROS plugin");
+        return;
+    }
+}
+
+void advertiseService(SScriptCallBack * p, const char * cmd, advertiseService_in * in, advertiseService_out * out)
+{
+    ServiceServerProxy *serviceServerProxy = new ServiceServerProxy();
+    serviceServerProxy->handle = serviceServerProxyNextHandle++;
+    serviceServerProxy->serviceName = in->serviceName;
+    serviceServerProxy->serviceType = in->serviceType;
+    serviceServerProxy->serviceCallback.scriptId = p->scriptID;
+    serviceServerProxy->serviceCallback.name = in->serviceCallback;
+    serviceServerProxies[serviceServerProxy->handle] = serviceServerProxy;
+
+    if(0) {}
+#include <srvsrv.cpp>
+    else
+    {
+        simSetLastError(cmd, "unsupported service type. please edit and recompile ROS plugin");
+        return;
+    }
+
+    if(!serviceServerProxy->server)
+    {
+        simSetLastError(cmd, "failed creation of ROS service server");
+        return;
+    }
+
+    out->serviceServerHandle = serviceServerProxy->handle;
+}
+
+void shutdownServiceServer(SScriptCallBack * p, const char * cmd, shutdownServiceServer_in * in, shutdownServiceServer_out * out)
+{
+    if(serviceServerProxies.find(in->serviceServerHandle) == serviceServerProxies.end())
+    {
+        simSetLastError(cmd, "invalid service server handle");
+        return;
+    }
+
+    ServiceServerProxy *serviceServerProxy = serviceServerProxies[in->serviceServerHandle];
+    serviceServerProxy->server.shutdown();
+    serviceServerProxies.erase(serviceServerProxy->handle);
+    delete serviceServerProxy;
 }
 
 void sendTransform(SScriptCallBack * p, const char * cmd, sendTransform_in * in, sendTransform_out * out)
