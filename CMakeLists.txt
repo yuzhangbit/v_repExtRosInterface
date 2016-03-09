@@ -22,7 +22,7 @@ link_directories("/opt/ros/jade/lib")
 add_custom_command(OUTPUT
     ${CMAKE_BINARY_DIR}/generated/adv.cpp ${CMAKE_BINARY_DIR}/generated/pub.cpp ${CMAKE_BINARY_DIR}/generated/ros_msg_io.cpp ${CMAKE_BINARY_DIR}/generated/ros_msg_io.h ${CMAKE_BINARY_DIR}/generated/ros_srv_io.cpp ${CMAKE_BINARY_DIR}/generated/ros_srv_io.h ${CMAKE_BINARY_DIR}/generated/srvcall.cpp ${CMAKE_BINARY_DIR}/generated/srvcli.cpp ${CMAKE_BINARY_DIR}/generated/srvsrv.cpp ${CMAKE_BINARY_DIR}/generated/sub.cpp
     COMMAND python ${CMAKE_SOURCE_DIR}/tools/generate_ros_stuff.py ${CMAKE_SOURCE_DIR}/meta/messages.txt ${CMAKE_SOURCE_DIR}/meta/services.txt ${CMAKE_BINARY_DIR}/generated/
-    DEPENDS ${CMAKE_SOURCE_DIR}/meta/messages.txt ${CMAKE_SOURCE_DIR}/meta/services.txt)
+    DEPENDS ${CMAKE_SOURCE_DIR}/meta/messages.txt ${CMAKE_SOURCE_DIR}/meta/services.txt ${CMAKE_SOURCE_DIR}/tools/generate_ros_stuff.py)
 
 add_custom_command(OUTPUT
     ${CMAKE_BINARY_DIR}/generated/stubs.cpp ${CMAKE_BINARY_DIR}/generated/stubs.h
