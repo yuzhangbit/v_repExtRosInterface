@@ -450,8 +450,8 @@ ptrSimGetStackInt32Table simGetStackInt32Table=0;
 ptrSimGetStackFloatTable simGetStackFloatTable=0;
 ptrSimGetStackDoubleTable simGetStackDoubleTable=0;
 ptrSimUnfoldStackTable simUnfoldStackTable=0;
-ptrSimSetScriptVariable simSetScriptVariable=0;
 ptrSimDebugStack simDebugStack=0;
+ptrSimSetScriptVariable simSetScriptVariable=0;
 
 
 
@@ -1049,8 +1049,8 @@ int getVrepProcAddresses(LIBRARY lib)
 	simGetStackFloatTable=(ptrSimGetStackFloatTable)(_getProcAddress(lib,"simGetStackFloatTable"));
 	simGetStackDoubleTable=(ptrSimGetStackDoubleTable)(_getProcAddress(lib,"simGetStackDoubleTable"));
 	simUnfoldStackTable=(ptrSimUnfoldStackTable)(_getProcAddress(lib,"simUnfoldStackTable"));
-	simSetScriptVariable=(ptrSimSetScriptVariable)(_getProcAddress(lib,"simSetScriptVariable"));
 	simDebugStack=(ptrSimDebugStack)(_getProcAddress(lib,"simDebugStack"));
+	simSetScriptVariable=(ptrSimSetScriptVariable)(_getProcAddress(lib,"simSetScriptVariable"));
 
 
 	_simGetContactCallbackCount=(ptr_simGetContactCallbackCount)(_getProcAddress(lib,"_simGetContactCallbackCount"));
@@ -3364,14 +3364,14 @@ int getVrepProcAddresses(LIBRARY lib)
 		printf("%s simUnfoldStackTable\n",couldNotFind);
 		return 0;
 	}
-	if (simSetScriptVariable==0)
-	{
-		printf("%s simSetScriptVariable\n",couldNotFind);
-		return 0;
-	}
 	if (simDebugStack==0)
 	{
 		printf("%s simDebugStack\n",couldNotFind);
+		return 0;
+	}
+	if (simSetScriptVariable==0)
+	{
+		printf("%s simSetScriptVariable\n",couldNotFind);
 		return 0;
 	}
 

@@ -208,7 +208,7 @@ typedef simInt (__cdecl *ptrSimEndDialog)(simInt genericDialogHandle);
 typedef simInt (__cdecl *ptrSimRegisterCustomLuaFunction)(const simChar* funcName,const simChar* callTips,const simInt* inputArgumentTypes,simVoid(*callBack)(struct SLuaCallBack* p));
 typedef simInt (__cdecl *ptrSimRegisterCustomLuaVariable)(const simChar* varName,const simChar* varValue);
 typedef simInt (__cdecl *ptrSimRegisterScriptCallbackFunction)(const simChar* funcNameAtPluginName,const simChar* callTips,simVoid(*callBack)(struct SScriptCallBack* cb));
-typedef simInt (__cdecl *ptrSimRegisterScriptVariable)(const simChar* varName,const simChar* varValue);
+typedef simInt (__cdecl *ptrSimRegisterScriptVariable)(const simChar* varName,const simChar* varValue,simInt stackHandle);
 typedef simInt (__cdecl *ptrSimSetJointTargetVelocity)(simInt objectHandle,simFloat targetVelocity);
 typedef simInt (__cdecl *ptrSimGetJointTargetVelocity)(simInt objectHandle,simFloat* targetVelocity);
 typedef simInt (__cdecl *ptrSimSetPathTargetNominalVelocity)(simInt objectHandle,simFloat targetNominalVelocity);
@@ -471,8 +471,8 @@ typedef simInt (__cdecl *ptrSimGetStackInt32Table)(simInt stackHandle,simInt* ar
 typedef simInt (__cdecl *ptrSimGetStackFloatTable)(simInt stackHandle,simFloat* array,simInt count);
 typedef simInt (__cdecl *ptrSimGetStackDoubleTable)(simInt stackHandle,simDouble* array,simInt count);
 typedef simInt (__cdecl *ptrSimUnfoldStackTable)(simInt stackHandle);
-typedef simInt (__cdecl *ptrSimSetScriptVariable)(simInt scriptHandleOrType,const simChar* variableNameAtScriptName,simInt stackHandle);
 typedef simInt (__cdecl *ptrSimDebugStack)(simInt stackHandle,simInt cIndex);
+typedef simInt (__cdecl *ptrSimSetScriptVariable)(simInt scriptHandleOrType,const simChar* variableNameAtScriptName,simInt stackHandle);
 
 
 
@@ -1018,8 +1018,8 @@ extern ptrSimGetStackInt32Table simGetStackInt32Table;
 extern ptrSimGetStackFloatTable simGetStackFloatTable;
 extern ptrSimGetStackDoubleTable simGetStackDoubleTable;
 extern ptrSimUnfoldStackTable simUnfoldStackTable;
-extern ptrSimSetScriptVariable simSetScriptVariable;
 extern ptrSimDebugStack simDebugStack;
+extern ptrSimSetScriptVariable simSetScriptVariable;
 
 
 extern ptr_simGetContactCallbackCount _simGetContactCallbackCount;
