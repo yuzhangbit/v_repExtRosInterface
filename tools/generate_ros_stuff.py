@@ -120,13 +120,13 @@ def get_srv_fields(srv_name):
 
 def generate_msg_wr_h(gt, fields, d, f):
     s = '''
-bool write__{norm}(const {ctype}& msg, int stack);
+void write__{norm}(const {ctype}& msg, int stack);
 '''.format(**d)
     f.write(s)
 
 def generate_msg_rd_h(gt, fields, d, f):
     s = '''
-bool read__{norm}(int stack, {ctype} *msg);
+void read__{norm}(int stack, {ctype} *msg);
 '''.format(**d)
     f.write(s)
 
@@ -143,13 +143,12 @@ def generate_msg_h(gt, fields, d, f):
 
 def generate_msg_wr_cpp(gt, fields, d, f):
     wf = '''
-bool write__{norm}(const {ctype}& msg, int stack)
+void write__{norm}(const {ctype}& msg, int stack)
 {{
-    if(simPushTableOntoStack(stack) == -1)
+    try
     {{
-        std::cerr << "write__{norm}" << ": " << "error: " << "push table failed." << std::endl;
-        return false;
-    }}'''.format(**d)
+        simPushTableOntoStackE(stack);
+'''.format(**d)
     for n, t in fields.items():
         d1 = d
         d1['n'] = n
@@ -159,59 +158,48 @@ bool write__{norm}(const {ctype}& msg, int stack)
         d1['norm1'] = t.normalized()
         if t.array:
             wf += '''
-    if(simPushStringOntoStack(stack, "{n}", 0) == -1)
-    {{
-        std::cerr << "write__{norm}" << ": " << "error: " << "push table key (" << "{nf}" << ") failed." << std::endl;
-        return false;
-    }}
-    if(simPushTableOntoStack(stack) == -1)
-    {{
-        std::cerr << "write__{norm}" << ": " << "error: " << "push array table (" << "{nf}" << ") failed." << std::endl;
-        return false;
-    }}
-    for(int i = 0; i < msg.{n}.size(); i++)
-    {{
-        if(!write__int32(i + 1, stack))
+        try
         {{
-            std::cerr << "write__{norm}" << ": " << "error: " << "push array table key " << i << " (" << "{nf}" << ") failed." << std::endl;
-            return false;
+            // write field '{n}'
+            simPushStringOntoStackE(stack, "{n}", 0);
+            simPushTableOntoStackE(stack);
+            for(int i = 0; i < msg.{n}.size(); i++)
+            {{
+                write__int32(i + 1, stack);
+                write__{norm1}(msg.{n}[i], stack);
+                simInsertDataIntoStackTableE(stack);
+            }}
+            simInsertDataIntoStackTableE(stack);
         }}
-        if(!write__{norm1}(msg.{n}[i], stack))
+        catch(exception& ex)
         {{
-            std::cerr << "write__{norm}" << ": " << "error: " << "push array table value (" << "{nf}" << ") failed." << std::endl;
-            return false;
-        }}
-        if(simInsertDataIntoStackTable(stack) == -1)
-        {{
-            std::cerr << "write__{norm}" << ": " << "error: " << "insert array table pair (" << "{nf}" << ") failed." << std::endl;
-            return false;
-        }}
-    }}
-    if(simInsertDataIntoStackTable(stack) == -1)
-    {{
-        std::cerr << "write__{norm}" << ": " << "error: " << "insert table pair (" << "{nf}" << ") failed." << std::endl;
-        return false;
-    }}
-'''.format(**d1)
+            std::string msg = "field '{n}': ";
+            msg += ex.what();
+            throw exception(msg);
+        }}'''.format(**d1)
         else:
             wf += '''
-    if(simPushStringOntoStack(stack, "{n}", 0) == -1)
-    {{
-        std::cerr << "write__{norm}" << ": " << "error: " << "push table key (" << "{nf}" << ") failed." << std::endl;
-        return false;
-    }}
-    if(!write__{norm1}(msg.{n}, stack))
-    {{
-        std::cerr << "write__{norm}" << ": " << "error: " << "push table field " << "{nf}" << " of type " << "{t}" << " failed." << std::endl;
-        return false;
-    }}
-    if(simInsertDataIntoStackTable(stack) == -1)
-    {{
-        std::cerr << "write__{norm}" << ": " << "error: " << "insert table pair " << "{nf}" << " failed." << std::endl;
-        return false;
-    }}'''.format(**d1)
+        try
+        {{
+            // write field '{n}'
+            simPushStringOntoStackE(stack, "{n}", 0);
+            write__{norm1}(msg.{n}, stack);
+            simInsertDataIntoStackTableE(stack);
+        }}
+        catch(exception& ex)
+        {{
+            std::string msg = "field '{n}': ";
+            msg += ex.what();
+            throw exception(msg);
+        }}'''.format(**d1)
     wf += '''
-    return true;
+    }}
+    catch(exception& ex)
+    {{
+        std::string msg = "write__{norm}: ";
+        msg += ex.what();
+        throw exception(msg);
+    }}
 }}
 
 '''.format(**d)
@@ -219,30 +207,28 @@ bool write__{norm}(const {ctype}& msg, int stack)
 
 def generate_msg_rd_cpp(gt, fields, d, f):
     rf = '''
-bool read__{norm}(int stack, {ctype} *msg)
+void read__{norm}(int stack, {ctype} *msg)
 {{
-    int i;
-    if((i = simGetStackTableInfo(stack, 0)) != sim_stack_table_map)
+    try
     {{
-        std::cerr << "read__{norm}" << ": " << "error: " << "expected a table (simGetStackTableInfo returned " << i << ")." << std::endl;
-        return false;
-    }}
+        if(simGetStackTableInfoE(stack, 0) != sim_stack_table_map)
+            throw exception("expected a table");
 
-    int sz = simGetStackSize(stack);
-    simUnfoldStackTable(stack);
-    int numItems = (simGetStackSize(stack) - sz + 1) / 2;
+        int sz = simGetStackSizeE(stack);
+        simUnfoldStackTableE(stack);
+        int numItems = (simGetStackSizeE(stack) - sz + 1) / 2;
 
-    char *str;
-    int strSz;
+        char *str;
+        int strSz;
 
-    while(numItems >= 1)
-    {{
-        simMoveStackItemToTop(stack, simGetStackSize(stack) - 2); // move key to top
-        if((str = simGetStackStringValue(stack, &strSz)) != NULL && strSz > 0)
+        while(numItems >= 1)
         {{
-            simPopStackItem(stack, 1); // now stack top is value
+            simMoveStackItemToTopE(stack, simGetStackSize(stack) - 2); // move key to top
+            if((str = simGetStackStringValueE(stack, &strSz)) != NULL && strSz > 0)
+            {{
+                simPopStackItemE(stack, 1); // now stack top is value
 
-            if(0) {{}}'''.format(**d)
+                if(0) {{}}'''.format(**d)
     for n, t in fields.items():
         d1 = d
         d1['n'] = n
@@ -256,66 +242,75 @@ bool read__{norm}(int stack, {ctype} *msg)
             else:
                 ins = 'msg->{n}.push_back(v);'.format(**d1)
             rf += '''
-            else if(strcmp(str, "{n}") == 0)
-            {{
-                int i;
-                if((i = simGetStackTableInfo(stack, 0)) < 0)
+                else if(strcmp(str, "{n}") == 0)
                 {{
-                    std::cerr << "read__{norm}" << ": " << "error: " << "expected a array-table (simGetStackTableInfo returned " << i << ")." << std::endl;
-                    return false;
-                }}
-                int sz1 = simGetStackSize(stack);
-                simUnfoldStackTable(stack);
-                int numItems = (simGetStackSize(stack) - sz + 1) / 2;
-                for(int i = 0; i < numItems; i++)
-                {{
-                    simMoveStackItemToTop(stack, simGetStackSize(stack) - 2); // move key to top
-                    int j;
-                    if(!read__int32(stack, &j))
+                    try
                     {{
-                        std::cerr << "read__{norm}" << ": " << "error: " << "not array table (" << str << ")." << std::endl;
-                        return false;
+                        // read field '{n}'
+                        if(simGetStackTableInfoE(stack, 0) < 0)
+                            throw exception("expected array");
+                        int sz1 = simGetStackSizeE(stack);
+                        simUnfoldStackTableE(stack);
+                        int numItems = (simGetStackSizeE(stack) - sz + 1) / 2;
+                        for(int i = 0; i < numItems; i++)
+                        {{
+                            simMoveStackItemToTopE(stack, simGetStackSize(stack) - 2); // move key to top
+                            int j;
+                            read__int32(stack, &j);
+                            // now stack top is value
+                            {ctype1} v;
+                            read__{norm1}(stack, &v);
+                            {ins}
+                            simPopStackItemE(stack, 1);
+                        }}
                     }}
-                    simPopStackItem(stack, 1); // now stack top is value
-                    {ctype1} v;
-                    if(!read__{norm1}(stack, &v))
+                    catch(exception& ex)
                     {{
-                        std::cerr << "read__{norm}" << ": " << "error: " << "value is not " << "{t}" << " for key: " << str << "." << std::endl;
-                        return false;
+                        std::string msg = "field {n}: ";
+                        msg += ex.what();
+                        throw exception(msg);
                     }}
-                    {ins}
-                    simPopStackItem(stack, 1);
-                }}
-            }}'''.format(ins=ins, **d1)
+                }}'''.format(ins=ins, **d1)
         else:
             rf += '''
-            else if(strcmp(str, "{n}") == 0)
-            {{
-                if(!read__{norm1}(stack, &(msg->{n})))
+                else if(strcmp(str, "{n}") == 0)
                 {{
-                    std::cerr << "read__{norm}" << ": " << "error: " << "value is not " << "{t}" << " for key: " << str << "." << std::endl;
-                    return false;
-                }}
-            }}'''.format(**d1)
+                    try
+                    {{
+                        // read field '{n}'
+                        read__{norm1}(stack, &(msg->{n}));
+                    }}
+                    catch(exception& ex)
+                    {{
+                        std::string msg = "field {n}: ";
+                        msg += ex.what();
+                        throw exception(msg);
+                    }}
+                }}'''.format(**d1)
     rf += '''
+                else
+                {{
+                    std::string msg = "unexpected key: ";
+                    msg += str;
+                    throw exception(msg);
+                }}
+
+                simReleaseBuffer(str);
+            }}
             else
             {{
-                std::cerr << "read__{norm}" << ": " << "error: " << "unexpected key: " << str << "." << std::endl;
-                return false;
+                throw exception("malformed table (bad key type)");
             }}
 
-            simReleaseBuffer(str);
+            numItems = (simGetStackSizeE(stack) - sz + 1) / 2;
         }}
-        else
-        {{
-            std::cerr << "read__{norm}" << ": " << "error: " << "malformed table (bad key type)." << std::endl;
-            return false;
-        }}
-
-        numItems = (simGetStackSize(stack) - sz + 1) / 2;
     }}
-    
-    return true;
+    catch(exception& ex)
+    {{
+        std::string msg = "read__{norm}: ";
+        msg += ex.what();
+        throw exception(msg);
+    }}
 }}
 
 '''.format(**d)
@@ -325,23 +320,22 @@ def generate_msg_cb_cpp(gt, fields, d, f):
     cb = '''
 void ros_callback__{norm}(const boost::shared_ptr<{ctype} const>& msg, SubscriberProxy *proxy)
 {{
-    int stack = simCreateStack();
-    if(stack != -1)
+    int stack = -1;
+    try
     {{
-        do
-        {{
-            if(!write__{norm}(*msg, stack))
-            {{
-                break;
-            }}
-            if(simCallScriptFunctionEx(proxy->topicCallback.scriptId, proxy->topicCallback.name.c_str(), stack) == -1)
-            {{
-                std::cerr << "ros_callback__{norm}" << ": " << "error: " << "call script failed." << std::endl;
-                break;
-            }}
-        }}
-        while(0);
-        simReleaseStack(stack);
+        stack = simCreateStackE();
+        write__{norm}(*msg, stack);
+        simCallScriptFunctionExE(proxy->topicCallback.scriptId, proxy->topicCallback.name.c_str(), stack);
+        simReleaseStackE(stack);
+        stack = -1;
+    }}
+    catch(exception& ex)
+    {{
+        if(stack != -1)
+            simReleaseStackE(stack); // don't throw
+        std::string msg = "ros_callback__{norm}: ";
+        msg += ex.what();
+        simSetLastError(proxy->topicCallback.name.c_str(), msg.c_str());
     }}
 }}
 
@@ -357,11 +351,7 @@ def generate_msg_pub(gt, fields, d, f):
     p = '''    else if(publisherProxy->topicType == "{fn}")
     {{
         {ctype} msg;
-        if(!read__{norm}(p->stackID, &msg))
-        {{
-            simSetLastError("simExtROS_publish", "invalid message format (check stderr)");
-            return;
-        }}
+        read__{norm}(p->stackID, &msg);
         publisherProxy->publisher.publish(msg);
     }}
 '''.format(**d)
@@ -403,24 +393,15 @@ def generate_srv_call(gt, fields_in, fields_out, d, f):
     p = '''    else if(serviceClientProxy->serviceType == "{fn}")
     {{
         {ctype} srv;
-        if(!read__{norm}Request(p->stackID, &(srv.request)))
-        {{
-            simSetLastError(cmd, "invalid request format (check stderr)");
-            return;
-        }}
+        read__{norm}Request(p->stackID, &(srv.request));
         if(serviceClientProxy->client.call(srv))
         {{
-            if(!write__{norm}Response(srv.response, p->stackID))
-            {{
-                simSetLastError(cmd, "failed to write response to stack (check stderr)");
-                return;
-            }}
+            write__{norm}Response(srv.response, p->stackID);
             out->result = true;
         }}
         else
         {{
-            simSetLastError(cmd, "failed to call service {fn}");
-            return;
+            throw exception("failed to call service {fn}");
         }}
     }}
 '''.format(**d)
@@ -437,32 +418,27 @@ def generate_srv_cb_cpp(gt, fields_in, fields_out, d, f):
 bool ros_srv_callback__{norm}({ctype}::Request& req, {ctype}::Response& res, ServiceServerProxy *proxy)
 {{
     bool ret = false;
-    int stack = simCreateStack();
-    if(stack != -1)
+    int stack = -1;
+
+    try
     {{
-        do
-        {{
-            if(!write__{norm}Request(req, stack))
-            {{
-                std::cerr << "ros_srv_callback__{norm}" << ": " << "error: " << "write request failed." << std::endl;
-                break;
-            }}
-            if(simCallScriptFunctionEx(proxy->serviceCallback.scriptId, proxy->serviceCallback.name.c_str(), stack) == -1)
-            {{
-                std::cerr << "ros_srv_callback__{norm}" << ": " << "error: " << "call script failed." << std::endl;
-                break;
-            }}
-            if(!read__{norm}Response(stack, &res))
-            {{
-                std::cerr << "ros_srv_callback__{norm}" << ": " << "error: " << "read response failed." << std::endl;
-                break;
-            }}
-            ret = true;
-        }}
-        while(0);
-        simReleaseStack(stack);
+        stack = simCreateStackE();
+        write__{norm}Request(req, stack);
+        simCallScriptFunctionExE(proxy->serviceCallback.scriptId, proxy->serviceCallback.name.c_str(), stack);
+        read__{norm}Response(stack, &res);
+        simReleaseStackE(stack);
+        stack = -1;
+        return true;
     }}
-    return ret;
+    catch(exception& ex)
+    {{
+        if(stack != -1)
+            simReleaseStack(stack); // don't throw
+        std::string msg = "ros_srv_callback__{norm}: ";
+        msg += ex.what();
+        simSetLastError(proxy->serviceCallback.name.c_str(), msg.c_str());
+        return false;
+    }}
 }}
 '''.format(**d)
     f.write(p)
@@ -525,20 +501,19 @@ def main(argc, argv):
     f_srv_cli = open(output_dir + '/srvcli.cpp', 'w')
     f_srv_srv = open(output_dir + '/srvsrv.cpp', 'w')
 
-    f_msg_cpp.write('''#include <ros_msg_builtin_io.h>
-#include <ros_msg_io.h>
+    f_msg_cpp.write('''#include <ros_msg_io.h>
 #include <v_repLib.h>
 
 ''')
     f_msg_h.write('''#ifndef VREP_ROS_PLUGIN__ROS_MSG_IO__H
 #define VREP_ROS_PLUGIN__ROS_MSG_IO__H
 
+#include <ros_msg_builtin_io.h>
 #include <ros/ros.h>
 #include <vrep_ros_plugin.h>
 
 ''') 
-    f_srv_cpp.write('''#include <ros_msg_builtin_io.h>
-#include <ros_msg_io.h>
+    f_srv_cpp.write('''#include <ros_msg_io.h>
 #include <ros_srv_io.h>
 #include <v_repLib.h>
 
@@ -546,6 +521,7 @@ def main(argc, argv):
     f_srv_h.write('''#ifndef VREP_ROS_PLUGIN__ROS_SRV_IO__H
 #define VREP_ROS_PLUGIN__ROS_SRV_IO__H
 
+#include <ros_msg_builtin_io.h>
 #include <ros/ros.h>
 #include <vrep_ros_plugin.h>
 
