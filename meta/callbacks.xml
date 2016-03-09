@@ -211,7 +211,7 @@
     <script-function name="subscriberCallback">
         <description>Callback for ROS subscriber.</description>
         <params>
-            <param name="message" type="table">
+            <param name="message" type="table" skip="true">
                 <description>the topic payload (i.e. the message)</description>
             </param>
         </params>
