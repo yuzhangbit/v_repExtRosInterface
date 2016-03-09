@@ -3,9 +3,10 @@ Building the ROS plugin:
 
 What you need:
     - C++ compiler
-    - Python interpreter (2.7 or greater)
-    - lxml package for Python
     - v_repStubsGen (available from https://github.com/fferri/v_repStubsGen)
+        - Python interpreter (2.7 or greater)
+        - lxml package for Python
+        - tempita package for Python
     - An XSLT Processor, such as SAXON (needed for generating documentation)
 
 Build steps:
