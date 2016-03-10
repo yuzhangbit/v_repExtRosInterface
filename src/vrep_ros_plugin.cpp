@@ -115,18 +115,12 @@ void publish(SScriptCallBack * p, const char * cmd, publish_in * in, publish_out
 
     simMoveStackItemToTop(p->stackID, 0);
 
-    try
-    {
-        if(0) {}
+    if(0) {}
 #include <pub.cpp>
-        else
-        {
-            throw exception("unsupported message type. please edit and recompile ROS plugin");
-        }
-    }
-    catch(exception& ex)
+    else
     {
-        simSetLastError(cmd, ex.what());
+        simSetLastError(cmd, "unsupported message type. please edit and recompile ROS plugin");
+        return;
     }
 }
 
@@ -181,18 +175,12 @@ void call(SScriptCallBack * p, const char * cmd, call_in * in, call_out * out)
 
     simMoveStackItemToTop(p->stackID, 0);
 
-    try
-    {
-        if(0) {}
+    if(0) {}
 #include <srvcall.cpp>
-        else
-        {
-            throw exception("unsupported service type. please edit and recompile ROS plugin");
-        }
-    }
-    catch(exception& ex)
+    else
     {
-        simSetLastError(cmd, ex.what());
+        simSetLastError(cmd, "unsupported service type. please edit and recompile ROS plugin");
+        return;
     }
 }
 
