@@ -192,17 +192,21 @@
             <!--command name="..." /-->
         </see-also>
         <params>
-            <param name="origin" type="table" item-type="float" size="3">
-                <description>frame origin</description>
+            <param name="transform" type="table" skip="true">
+                <description>the transformation expressed as a geometry_msgs/TransformStamped message, i.e. {header={stamp=timeStamp, frame_id='...'}, child_frame_id='...', transform={translation={x=..., y=..., z=...}, rotation={x=..., y=..., z=..., w=...}}}</description>
             </param>
-            <param name="orientation" type="table" item-type="float" size="4">
-                <description>frame orientation, expressed as quaternion</description>
-            </param>
-            <param name="parentFrame" type="string">
-                <description>frame id of parent frame</description>
-            </param>
-            <param name="childFrame" type="string">
-                <description>frame id of this frame</description>
+        </params>
+        <return>
+        </return>
+    </command>
+    <command name="sendTransforms">
+        <description>Publish several TF transformations between frames.</description>
+        <see-also>
+            <!--command name="..." /-->
+        </see-also>
+        <params>
+            <param name="transforms" type="table" skip="true">
+                <description>an array of geometry_msgs/TransformStamped messages</description>
             </param>
         </params>
         <return>

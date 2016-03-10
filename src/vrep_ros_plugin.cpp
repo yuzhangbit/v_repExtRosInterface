@@ -211,10 +211,34 @@ void shutdownServiceServer(SScriptCallBack * p, const char * cmd, shutdownServic
 
 void sendTransform(SScriptCallBack * p, const char * cmd, sendTransform_in * in, sendTransform_out * out)
 {
-    tf::Transform t;
-    t.setOrigin(tf::Vector3(in->origin[0], in->origin[1], in->origin[2]));
-    t.setRotation(tf::Quaternion(in->orientation[0], in->orientation[1], in->orientation[2], in->orientation[3]));
-    tfbr->sendTransform(tf::StampedTransform(t, ros::Time::now(), in->parentFrame, in->childFrame));
+    geometry_msgs::TransformStamped t;
+    read__geometry_msgs__TransformStamped(p->stackID, &t);
+    tfbr->sendTransform(t);
+}
+
+void sendTransforms(SScriptCallBack * p, const char * cmd, sendTransforms_in * in, sendTransforms_out * out)
+{
+    std::vector<geometry_msgs::TransformStamped> v;
+
+    simMoveStackItemToTopE(p->stackID, 0);
+    int i = simGetStackTableInfoE(p->stackID, 0);
+    if(i < 0)
+        throw exception("error reading input argument 1 (origin): expected array");
+    int oldsz = simGetStackSizeE(p->stackID);
+    simUnfoldStackTableE(p->stackID);
+    int sz = (simGetStackSizeE(p->stackID) - oldsz + 1) / 2;
+    for(int i = 0; i < sz; i++)
+    {
+        simMoveStackItemToTopE(p->stackID, oldsz - 1);
+        int j;
+        read__int(p->stackID, &j);
+        simMoveStackItemToTop(p->stackID, oldsz - 1);
+        geometry_msgs::TransformStamped t;
+        read__geometry_msgs__TransformStamped(p->stackID, &t);
+        v.push_back(t);
+    }
+    
+    tfbr->sendTransform(v);
 }
 
 bool initialize()
