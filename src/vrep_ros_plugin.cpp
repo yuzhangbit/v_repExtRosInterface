@@ -37,14 +37,12 @@ void subscribe(SScriptCallBack * p, const char * cmd, subscribe_in * in, subscri
 #include <sub.cpp>
     else
     {
-        simSetLastError(cmd, "unsupported message type. please edit and recompile ROS plugin");
-        return;
+        throw exception("unsupported message type. please edit and recompile ROS plugin");
     }
 
     if(!subscriberProxy->subscriber)
     {
-        simSetLastError(cmd, "failed creation of ROS subscriber");
-        return;
+        throw exception("failed creation of ROS subscriber");
     }
 
     out->subscriberHandle = subscriberProxy->handle;
@@ -54,8 +52,7 @@ void shutdownSubscriber(SScriptCallBack * p, const char * cmd, shutdownSubscribe
 {
     if(subscriberProxies.find(in->subscriberHandle) == subscriberProxies.end())
     {
-        simSetLastError(cmd, "invalid subscriber handle");
-        return;
+        throw exception("invalid subscriber handle");
     }
 
     SubscriberProxy *subscriberProxy = subscriberProxies[in->subscriberHandle];
@@ -76,14 +73,12 @@ void advertise(SScriptCallBack * p, const char * cmd, advertise_in * in, adverti
 #include <adv.cpp>
     else
     {
-        simSetLastError(cmd, "unsupported message type. please edit and recompile ROS plugin");
-        return;
+        throw exception("unsupported message type. please edit and recompile ROS plugin");
     }
 
     if(!publisherProxy->publisher)
     {
-        simSetLastError(cmd, "failed creation of ROS publisher");
-        return;
+        throw exception("failed creation of ROS publisher");
     }
 
     out->publisherHandle = publisherProxy->handle;
@@ -93,8 +88,7 @@ void shutdownPublisher(SScriptCallBack * p, const char * cmd, shutdownPublisher_
 {
     if(publisherProxies.find(in->publisherHandle) == publisherProxies.end())
     {
-        simSetLastError(cmd, "invalid publisher handle");
-        return;
+        throw exception("invalid publisher handle");
     }
 
     PublisherProxy *publisherProxy = publisherProxies[in->publisherHandle];
@@ -107,8 +101,7 @@ void publish(SScriptCallBack * p, const char * cmd, publish_in * in, publish_out
 {
     if(publisherProxies.find(in->publisherHandle) == publisherProxies.end())
     {
-        simSetLastError(cmd, "invalid publisher handle");
-        return;
+        throw exception("invalid publisher handle");
     }
 
     PublisherProxy *publisherProxy = publisherProxies[in->publisherHandle];
@@ -119,8 +112,7 @@ void publish(SScriptCallBack * p, const char * cmd, publish_in * in, publish_out
 #include <pub.cpp>
     else
     {
-        simSetLastError(cmd, "unsupported message type. please edit and recompile ROS plugin");
-        return;
+        throw exception("unsupported message type. please edit and recompile ROS plugin");
     }
 }
 
@@ -136,14 +128,12 @@ void serviceClient(SScriptCallBack * p, const char * cmd, serviceClient_in * in,
 #include <srvcli.cpp>
     else
     {
-        simSetLastError(cmd, "unsupported service type. please edit and recompile ROS plugin");
-        return;
+        throw exception("unsupported service type. please edit and recompile ROS plugin");
     }
 
     if(!serviceClientProxy->client)
     {
-        simSetLastError(cmd, "failed creation of ROS service client");
-        return;
+        throw exception("failed creation of ROS service client");
     }
 
     out->serviceClientHandle = serviceClientProxy->handle;
@@ -153,8 +143,7 @@ void shutdownServiceClient(SScriptCallBack * p, const char * cmd, shutdownServic
 {
     if(serviceClientProxies.find(in->serviceClientHandle) == serviceClientProxies.end())
     {
-        simSetLastError(cmd, "invalid service client handle");
-        return;
+        throw exception("invalid service client handle");
     }
 
     ServiceClientProxy *serviceClientProxy = serviceClientProxies[in->serviceClientHandle];
@@ -167,8 +156,7 @@ void call(SScriptCallBack * p, const char * cmd, call_in * in, call_out * out)
 {
     if(serviceClientProxies.find(in->serviceClientHandle) == serviceClientProxies.end())
     {
-        simSetLastError(cmd, "invalid service client handle");
-        return;
+        throw exception("invalid service client handle");
     }
 
     ServiceClientProxy *serviceClientProxy = serviceClientProxies[in->serviceClientHandle];
@@ -179,8 +167,7 @@ void call(SScriptCallBack * p, const char * cmd, call_in * in, call_out * out)
 #include <srvcall.cpp>
     else
     {
-        simSetLastError(cmd, "unsupported service type. please edit and recompile ROS plugin");
-        return;
+        throw exception("unsupported service type. please edit and recompile ROS plugin");
     }
 }
 
@@ -198,14 +185,12 @@ void advertiseService(SScriptCallBack * p, const char * cmd, advertiseService_in
 #include <srvsrv.cpp>
     else
     {
-        simSetLastError(cmd, "unsupported service type. please edit and recompile ROS plugin");
-        return;
+        throw exception("unsupported service type. please edit and recompile ROS plugin");
     }
 
     if(!serviceServerProxy->server)
     {
-        simSetLastError(cmd, "failed creation of ROS service server");
-        return;
+        throw exception("failed creation of ROS service server");
     }
 
     out->serviceServerHandle = serviceServerProxy->handle;
@@ -215,8 +200,7 @@ void shutdownServiceServer(SScriptCallBack * p, const char * cmd, shutdownServic
 {
     if(serviceServerProxies.find(in->serviceServerHandle) == serviceServerProxies.end())
     {
-        simSetLastError(cmd, "invalid service server handle");
-        return;
+        throw exception("invalid service server handle");
     }
 
     ServiceServerProxy *serviceServerProxy = serviceServerProxies[in->serviceServerHandle];
