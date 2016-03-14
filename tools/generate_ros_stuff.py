@@ -214,19 +214,21 @@ void read__{norm}(int stack, {ctype} *msg)
         if(simGetStackTableInfoE(stack, 0) != sim_stack_table_map)
             throw exception("expected a table");
 
-        int sz = simGetStackSizeE(stack);
+        int oldsz = simGetStackSizeE(stack);
         simUnfoldStackTableE(stack);
-        int numItems = (simGetStackSizeE(stack) - sz + 1) / 2;
+        int numItems = (simGetStackSizeE(stack) - oldsz + 1) / 2;
 
         char *str;
         int strSz;
 
         while(numItems >= 1)
         {{
-            simMoveStackItemToTopE(stack, simGetStackSize(stack) - 2); // move key to top
+            simMoveStackItemToTopE(stack, oldsz - 1); // move key to top
             if((str = simGetStackStringValueE(stack, &strSz)) != NULL && strSz > 0)
             {{
-                simPopStackItemE(stack, 1); // now stack top is value
+                simPopStackItemE(stack, 1);
+
+                simMoveStackItemToTopE(stack, oldsz - 1); // move value to top
 
                 if(0) {{}}'''.format(**d)
     for n, t in fields.items():
@@ -249,19 +251,18 @@ void read__{norm}(int stack, {ctype} *msg)
                         // read field '{n}'
                         if(simGetStackTableInfoE(stack, 0) < 0)
                             throw exception("expected array");
-                        int sz1 = simGetStackSizeE(stack);
+                        int oldsz1 = simGetStackSizeE(stack);
                         simUnfoldStackTableE(stack);
-                        int numItems = (simGetStackSizeE(stack) - sz + 1) / 2;
-                        for(int i = 0; i < numItems; i++)
+                        int numItems1 = (simGetStackSizeE(stack) - oldsz1 + 1) / 2;
+                        for(int i = 0; i < numItems1; i++)
                         {{
-                            simMoveStackItemToTopE(stack, simGetStackSize(stack) - 2); // move key to top
+                            simMoveStackItemToTopE(stack, oldsz1 - 1); // move key to top
                             int j;
                             read__int32(stack, &j);
-                            // now stack top is value
+                            simMoveStackItemToTopE(stack, oldsz1 - 1); // move value to top
                             {ctype1} v;
                             read__{norm1}(stack, &v);
                             {ins}
-                            simPopStackItemE(stack, 1);
                         }}
                     }}
                     catch(exception& ex)
@@ -302,7 +303,7 @@ void read__{norm}(int stack, {ctype} *msg)
                 throw exception("malformed table (bad key type)");
             }}
 
-            numItems = (simGetStackSizeE(stack) - sz + 1) / 2;
+            numItems = (simGetStackSizeE(stack) - oldsz + 1) / 2;
         }}
     }}
     catch(exception& ex)
