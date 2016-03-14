@@ -1,6 +1,8 @@
 #include <vrep_ros_plugin.h>
 
 #include <tf/transform_broadcaster.h>
+#include <image_transport/image_transport.h>
+#include <cv_bridge/cv_bridge.h>
 
 #define PLUGIN_VERSION 5 // 5 since 3.3.1 (using stacks to exchange data with scripts)
 
@@ -12,6 +14,7 @@ LIBRARY vrepLib; // the V-REP library that we will dynamically load and bind
 ros::NodeHandle *nh = NULL;
 
 tf::TransformBroadcaster *tfbr = NULL;
+image_transport::ImageTransport *imtr = NULL;
 
 int subscriberProxyNextHandle = 3562;
 int publisherProxyNextHandle = 7980;
@@ -22,6 +25,42 @@ std::map<int, SubscriberProxy *> subscriberProxies;
 std::map<int, PublisherProxy *> publisherProxies;
 std::map<int, ServiceClientProxy *> serviceClientProxies;
 std::map<int, ServiceServerProxy *> serviceServerProxies;
+
+void ros_imtr_callback(const sensor_msgs::ImageConstPtr& msg, SubscriberProxy *subscriberProxy)
+{
+	if(msg->is_bigendian)
+    {
+        std::cerr << "ros_imtr_callback: error: big endian image" << std::endl;
+        return;
+    }
+
+	int data_len = msg->step * msg->height;
+    simChar *buf = simCreateBuffer(data_len);
+
+	for(unsigned int i = 0; i < msg->height; i++)
+	{
+		int msg_idx = (msg->height - i - 1) * msg->step;
+		int buf_idx = i * msg->step;
+		for(unsigned int j = 0; j < msg->step; j++)
+        {
+            buf[buf_idx + j] = msg->data[msg_idx + j];
+        }
+	}
+
+    imageTransportCallback_in in_args;
+    imageTransportCallback_out out_args;
+    in_args.data = std::string(buf);
+    in_args.width = msg->width;
+	in_args.height = msg->height;
+
+    simReleaseBuffer(buf);
+
+    if(!imageTransportCallback(subscriberProxy->topicCallback.scriptId, subscriberProxy->topicCallback.name.c_str(), &in_args, &out_args))
+    {
+        std::cerr << "ros_imtr_callback: error: failed to call callback" << std::endl;
+        return;
+    }
+}
 
 void subscribe(SScriptCallBack * p, const char * cmd, subscribe_in * in, subscribe_out * out)
 {
@@ -241,6 +280,104 @@ void sendTransforms(SScriptCallBack * p, const char * cmd, sendTransforms_in * i
     tfbr->sendTransform(v);
 }
 
+void imageTransportSubscribe(SScriptCallBack *p, const char *cmd, imageTransportSubscribe_in *in, imageTransportSubscribe_out *out)
+{
+    SubscriberProxy *subscriberProxy = new SubscriberProxy();
+    subscriberProxy->handle = subscriberProxyNextHandle++;
+    subscriberProxy->topicName = in->topicName;
+    subscriberProxy->topicType = "@image_transport";
+    subscriberProxy->topicCallback.scriptId = p->scriptID;
+    subscriberProxy->topicCallback.name = in->topicCallback;
+    subscriberProxies[subscriberProxy->handle] = subscriberProxy;
+
+    subscriberProxy->imageTransportSubscriber = imtr->subscribe(in->topicName, in->queueSize, boost::bind(ros_imtr_callback, _1, subscriberProxy));
+
+    if(!subscriberProxy->imageTransportSubscriber)
+    {
+        throw exception("failed creation of ROS ImageTransport subscriber");
+    }
+
+    out->subscriberHandle = subscriberProxy->handle;
+}
+
+void imageTransportShutdownSubscriber(SScriptCallBack *p, const char *cmd, imageTransportShutdownSubscriber_in *in, imageTransportShutdownSubscriber_out *out)
+{
+    if(subscriberProxies.find(in->subscriberHandle) == subscriberProxies.end())
+    {
+        throw exception("invalid subscriber handle");
+    }
+
+    SubscriberProxy *subscriberProxy = subscriberProxies[in->subscriberHandle];
+    subscriberProxy->imageTransportSubscriber.shutdown();
+    subscriberProxies.erase(subscriberProxy->handle);
+    delete subscriberProxy;
+}
+
+void imageTransportAdvertise(SScriptCallBack *p, const char *cmd, imageTransportAdvertise_in *in, imageTransportAdvertise_out *out)
+{
+    PublisherProxy *publisherProxy = new PublisherProxy();
+    publisherProxy->handle = publisherProxyNextHandle++;
+    publisherProxy->topicName = in->topicName;
+    publisherProxy->topicType = "@image_transport";
+    publisherProxies[publisherProxy->handle] = publisherProxy;
+
+    publisherProxy->imageTransportPublisher = imtr->advertise(in->topicName, in->queueSize);
+
+    if(!publisherProxy->imageTransportPublisher)
+    {
+        throw exception("failed creation of ROS ImageTransport publisher");
+    }
+
+    out->publisherHandle = publisherProxy->handle;
+}
+
+void imageTransportShutdownPublisher(SScriptCallBack *p, const char *cmd, imageTransportShutdownPublisher_in *in, imageTransportShutdownPublisher_out *out)
+{
+    if(publisherProxies.find(in->publisherHandle) == publisherProxies.end())
+    {
+        throw exception("invalid publisher handle");
+    }
+
+    PublisherProxy *publisherProxy = publisherProxies[in->publisherHandle];
+    publisherProxy->imageTransportPublisher.shutdown();
+    publisherProxies.erase(publisherProxy->handle);
+    delete publisherProxy;
+}
+
+void imageTransportPublish(SScriptCallBack *p, const char *cmd, imageTransportPublish_in *in, imageTransportPublish_out *out)
+{
+    if(publisherProxies.find(in->publisherHandle) == publisherProxies.end())
+    {
+        throw exception("invalid publisher handle");
+    }
+
+    PublisherProxy *publisherProxy = publisherProxies[in->publisherHandle];
+
+	sensor_msgs::Image image_msg;
+    image_msg.header.stamp = ros::Time::now();
+    image_msg.header.frame_id = in->frame_id;
+	image_msg.encoding = sensor_msgs::image_encodings::RGB8;
+	image_msg.width = in->width;
+	image_msg.height = in->height;
+	image_msg.step = image_msg.width * 3;
+
+	int data_len = image_msg.step * image_msg.height;
+	image_msg.data.resize(data_len);
+	image_msg.is_bigendian = 0;
+
+	for(unsigned int i = 0; i < image_msg.height; i++)
+	{
+		int msg_idx = (image_msg.height - i - 1) * image_msg.step;
+		int buf_idx = i * image_msg.step;
+		for(unsigned int j = 0; j < image_msg.step; j++)
+        {
+			image_msg.data[msg_idx + j] = in->data[buf_idx + j];
+        }
+	}
+
+    publisherProxy->imageTransportPublisher.publish(image_msg);
+}
+
 bool initialize()
 {
     int argc = 0;
@@ -252,6 +389,7 @@ bool initialize()
 
     nh = new ros::NodeHandle("~");
     tfbr = new tf::TransformBroadcaster();
+    imtr = new image_transport::ImageTransport(*nh);
 
     return true;
 }
@@ -260,6 +398,7 @@ void shutdown()
 {
     ros::shutdown();
 
+    delete imtr;
     delete tfbr;
     delete nh;
 }

@@ -212,11 +212,119 @@
         <return>
         </return>
     </command>
+    <command name="imageTransportSubscribe">
+        <description>Subscribe to a topic using ImageTransport.</description>
+        <see-also>
+            <!--command name="..." /-->
+        </see-also>
+        <params>
+            <param name="topicName" type="string">
+                <description>topic name, e.g.: '/cmd_vel'</description>
+            </param>
+            <param name="topicCallback" type="string">
+                <description>name of the callback function, which will be called as: topicCallback(string data, number width, number height)</description>
+            </param>
+            <param name="queueSize" type="int" default="0">
+                <description>(optional) queue size</description>
+            </param>
+        </params>
+        <return>
+            <param name="subscriberHandle" type="int">
+                <description>a handle to the ROS subscriber</description>
+            </param>
+        </return>
+    </command>
+    <command name="imageTransportShutdownSubscriber">
+        <description>Unsubscribe the callback associated with this subscriber using ImageTransport.</description>
+        <see-also>
+            <!--command name="..." /-->
+        </see-also>
+        <params>
+            <param name="subscriberHandle" type="int">
+                <description>the subscriber handle</description>
+            </param>
+        </params>
+        <return>
+        </return>
+    </command>
+    <command name="imageTransportAdvertise">
+        <description>Advertise a topic and create a topic publisher using ImageTransport.</description>
+        <see-also>
+            <!--command name="..." /-->
+        </see-also>
+        <params>
+            <param name="topicName" type="string">
+                <description>topic name, e.g.: '/cmd_vel'</description>
+            </param>
+            <param name="queueSize" type="int" default="0">
+                <description>(optional) queue size</description>
+            </param>
+        </params>
+        <return>
+            <param name="publisherHandle" type="int">
+                <description>a handle to the ROS publisher</description>
+            </param>
+        </return>
+    </command>
+    <command name="imageTransportShutdownPublisher">
+        <description>Shutdown the advertisement associated with this publisher using ImageTransport.</description>
+        <see-also>
+            <!--command name="..." /-->
+        </see-also>
+        <params>
+            <param name="publisherHandle" type="int">
+                <description>the publisher handle</description>
+            </param>
+        </params>
+        <return>
+        </return>
+    </command>
+    <command name="imageTransportPublish">
+        <description>Publish a message on the topic associated with this publisher using ImageTransport.</description>
+        <see-also>
+            <!--command name="..." /-->
+        </see-also>
+        <params>
+            <param name="publisherHandle" type="int">
+                <description>the publisher handle</description>
+            </param>
+            <param name="data" type="string">
+                <description>the image data</description>
+            </param>
+            <param name="width" type="int">
+                <description>image width</description>
+            </param>
+            <param name="height" type="int">
+                <description>image height</description>
+            </param>
+            <param name="frame_id" type="string">
+                <description>frame id</description>
+            </param>
+        </params>
+        <return>
+        </return>
+    </command>
     <script-function name="subscriberCallback">
         <description>Callback for ROS subscriber.</description>
         <params>
             <param name="message" type="table" skip="true">
                 <description>the topic payload (i.e. the message)</description>
+            </param>
+        </params>
+        <return>
+        </return>
+    </script-function>
+    <script-function name="imageTransportCallback">
+        <description>Callback for ROS ImageTransport subscriber.</description>
+        <params>
+            <param name="data" type="string">
+                <description>the image data</description>
+            </param>
+            <param name="width" type="int">
+                <description>image width</description>
+            </param>
+            <param name="height" type="int">
+                <description>image height</description>
             </param>
         </params>
         <return>

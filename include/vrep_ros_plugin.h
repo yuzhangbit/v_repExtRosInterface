@@ -12,6 +12,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include <ros/ros.h>
+#include <image_transport/image_transport.h>
 
 #define VREP_DLLEXPORT extern "C"
 
@@ -33,6 +34,7 @@ struct SubscriberProxy
     std::string topicType;
     ScriptCallback topicCallback;
     ros::Subscriber subscriber;
+    image_transport::Subscriber imageTransportSubscriber;
 };
 
 struct PublisherProxy
@@ -41,6 +43,7 @@ struct PublisherProxy
     std::string topicName;
     std::string topicType;
     ros::Publisher publisher;
+    image_transport::Publisher imageTransportPublisher;
 };
 
 struct ServiceClientProxy
