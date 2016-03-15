@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(vrep_ros_plugin)
 
 find_package(catkin REQUIRED COMPONENTS
-  roscpp image_transport tf vrep_common
+  roscpp image_transport tf vrep_common cv_bridge
 )
 
 catkin_package(
