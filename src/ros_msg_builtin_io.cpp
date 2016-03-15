@@ -164,7 +164,7 @@ void read__string(int stack, std::string *value)
     simInt strSize;
     if((str = simGetStackStringValueE(stack, &strSize)) != NULL && strSize > 0)
     {
-        *value = std::string(str);
+        *value = std::string(str, strSize);
         simPopStackItemE(stack, 1);
     }
     else
@@ -272,7 +272,7 @@ void write__float64(double value, int stack)
 void write__string(std::string value, int stack)
 {
     const simChar *v = value.c_str();
-    simPushStringOntoStackE(stack, v, 0);
+    simPushStringOntoStackE(stack, v, value.length());
 }
 
 void write__time(ros::Time value, int stack)

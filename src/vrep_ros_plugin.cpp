@@ -30,12 +30,18 @@ void ros_imtr_callback(const sensor_msgs::ImageConstPtr& msg, SubscriberProxy *s
 {
 	if(msg->is_bigendian)
     {
-        std::cerr << "ros_imtr_callback: error: big endian image" << std::endl;
+        std::cerr << "ros_imtr_callback: error: big endian image not supported" << std::endl;
         return;
     }
 
 	int data_len = msg->step * msg->height;
-    simChar *buf = simCreateBuffer(data_len);
+
+    imageTransportCallback_in in_args;
+    imageTransportCallback_out out_args;
+
+    in_args.width = msg->width;
+	in_args.height = msg->height;
+    in_args.data.resize(data_len);
 
 	for(unsigned int i = 0; i < msg->height; i++)
 	{
@@ -43,17 +49,9 @@ void ros_imtr_callback(const sensor_msgs::ImageConstPtr& msg, SubscriberProxy *s
 		int buf_idx = i * msg->step;
 		for(unsigned int j = 0; j < msg->step; j++)
         {
-            buf[buf_idx + j] = msg->data[msg_idx + j];
+            in_args.data[buf_idx + j] = msg->data[msg_idx + j];
         }
 	}
-
-    imageTransportCallback_in in_args;
-    imageTransportCallback_out out_args;
-    in_args.data = std::string(buf);
-    in_args.width = msg->width;
-	in_args.height = msg->height;
-
-    simReleaseBuffer(buf);
 
     if(!imageTransportCallback(subscriberProxy->topicCallback.scriptId, subscriberProxy->topicCallback.name.c_str(), &in_args, &out_args))
     {
