@@ -29,10 +29,10 @@ add_custom_command(OUTPUT
     COMMAND python -m v_repStubsGen -H ${CMAKE_BINARY_DIR}/generated/stubs.h -C ${CMAKE_BINARY_DIR}/generated/stubs.cpp -I vrep_ros_plugin.h ${CMAKE_SOURCE_DIR}/meta/callbacks.xml
     DEPENDS ${CMAKE_SOURCE_DIR}/meta/callbacks.xml)
 
-add_library(v_repExtRos src/vrep_ros_plugin.cpp generated/stubs.cpp src/ros_msg_builtin_io.cpp generated/ros_msg_io.cpp generated/ros_srv_io.cpp src/v_repLib.cpp)
+add_library(v_repExtRosInterface src/vrep_ros_plugin.cpp generated/stubs.cpp src/ros_msg_builtin_io.cpp generated/ros_msg_io.cpp generated/ros_srv_io.cpp src/v_repLib.cpp)
 
-add_dependencies(v_repExtRos ${catkin_EXPORTED_TARGETS})
-target_link_libraries(v_repExtRos
+add_dependencies(v_repExtRosInterface ${catkin_EXPORTED_TARGETS})
+target_link_libraries(v_repExtRosInterface
     pthread
     dl
     roslib
