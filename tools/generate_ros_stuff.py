@@ -1,6 +1,7 @@
 from sys import argv, exit, stderr
-from subprocess import check_output
+import os
 import re
+import subprocess
 
 # used to resolve messages specified without a package name
 # name -> pkg/name
@@ -106,17 +107,19 @@ def get_fields(lines):
 
 # parse msg definition
 def get_msg_fields(msg_name):
-    lines = [ln.strip() for ln in check_output(['rosmsg', 'show', '-r', msg_name]).split('\n')]
-    return get_fields(lines)
+    with open(os.devnull, 'w') as fnull:
+        lines = [ln.strip() for ln in subprocess.check_output(['rosmsg', 'show', '-r', msg_name], stderr=fnull).split('\n')]
+        return get_fields(lines)
 
 # parse srv definition
 def get_srv_fields(srv_name):
-    lines = [ln.strip() for ln in check_output(['rossrv', 'show', '-r', srv_name]).split('\n')]
-    sep = '---'
-    if sep not in lines:
-        raise ValueError('bad srv definition')
-    i = lines.index(sep)
-    return get_fields(lines[:i]), get_fields(lines[i+1:])
+    with open(os.devnull, 'w') as fnull:
+        lines = [ln.strip() for ln in subprocess.check_output(['rossrv', 'show', '-r', srv_name], stderr=fnull).split('\n')]
+        sep = '---'
+        if sep not in lines:
+            raise ValueError('bad srv definition')
+        i = lines.index(sep)
+        return get_fields(lines[:i]), get_fields(lines[i+1:])
 
 def generate_msg_wr_h(gt, fields, d, f):
     s = '''
@@ -539,10 +542,14 @@ def main(argc, argv):
     f_srv_h.write('\n')
 
     # for each msg generate cpp, h, adv, pub, sub code
-    for msg in resolve_msg.values():
+    for msg in sorted(resolve_msg.values()):
         print('Generating code for message %s...' % msg)
         gt = TypeSpec(msg)
-        fields = get_msg_fields(msg)
+        try:
+            fields = get_msg_fields(msg)
+        except subprocess.CalledProcessError:
+            print('WARNING: bad message: %s' % msg)
+            continue
         d = {'norm': gt.normalized(), 'ctype': gt.ctype(), 'fn': gt.fullname}
         generate_msg_cpp(gt, fields, d, f_msg_cpp)
         generate_msg_h(gt, fields, d, f_msg_h)
@@ -550,10 +557,14 @@ def main(argc, argv):
         generate_msg_pub(gt, fields, d, f_msg_pub)
         generate_msg_sub(gt, fields, d, f_msg_sub)
 
-    for srv in srv_list:
+    for srv in sorted(srv_list):
         print('Generating code for service %s...' % srv)
         gt = TypeSpec(srv)
-        fields_in, fields_out = get_srv_fields(srv)
+        try:
+            fields_in, fields_out = get_srv_fields(srv)
+        except subprocess.CalledProcessError:
+            print('WARNING: bad service: %s' % srv)
+            continue
         d = {'norm': gt.normalized(), 'ctype': gt.ctype(), 'fn': gt.fullname}
         generate_srv_cli(gt, fields_in, fields_out, d, f_srv_cli)
         generate_srv_srv(gt, fields_in, fields_out, d, f_srv_srv)
