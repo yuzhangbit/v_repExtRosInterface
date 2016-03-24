@@ -29,12 +29,17 @@ std::map<int, ServiceServerProxy *> serviceServerProxies;
 
 bool shouldProxyBeDestroyedAfterSimulationStop(SScriptCallBack *p)
 {
+    if(simGetSimulationState() == sim_simulation_stopped)
+        return false;
     int property;
     int associatedObject;
     if(simGetScriptProperty(p->scriptID, &property, &associatedObject) == -1)
         return false;
-    property &= ~sim_scripttype_threaded;
-    return simGetSimulationState() != sim_simulation_stopped && !(property & (sim_scripttype_addonscript | sim_scripttype_addonfunction | sim_scripttype_customizationscript));
+    if(property & sim_scripttype_threaded)
+        property -= sim_scripttype_threaded;
+    if(property == sim_scripttype_addonscript || property == sim_scripttype_addonfunction || property == sim_scripttype_customizationscript)
+        return false;
+    return true;
 }
 
 void ros_imtr_callback(const sensor_msgs::ImageConstPtr& msg, SubscriberProxy *subscriberProxy)
@@ -420,51 +425,81 @@ void shutdown()
 
 void shutdownTransientSubscribers(SScriptCallBack *p)
 {
+    std::vector<int> handles;
+
     for(std::map<int, SubscriberProxy *>::iterator it = subscriberProxies.begin(); it != subscriberProxies.end(); ++it)
     {
         if(it->second->destroyAfterSimulationStop)
         {
-            if(it->second->subscriber)
-                shutdownSubscriber(p, it->first);
-            if(it->second->imageTransportSubscriber)
-                imageTransportShutdownSubscriber(p, it->first);
+            handles.push_back(it->first);
         }
+    }
+
+    for(std::vector<int>::iterator it = handles.begin(); it != handles.end(); ++it)
+    {
+        SubscriberProxy *proxy = subscriberProxies[*it];
+        if(proxy->subscriber)
+            shutdownSubscriber(p, *it);
+        if(proxy->imageTransportSubscriber)
+            imageTransportShutdownSubscriber(p, *it);
     }
 }
 
 void shutdownTransientPublishers(SScriptCallBack *p)
 {
+    std::vector<int> handles;
+
     for(std::map<int, PublisherProxy *>::iterator it = publisherProxies.begin(); it != publisherProxies.end(); ++it)
     {
         if(it->second->destroyAfterSimulationStop)
         {
-            if(it->second->publisher)
-                shutdownPublisher(p, it->first);
-            if(it->second->imageTransportPublisher)
-                imageTransportShutdownPublisher(p, it->first);
+            handles.push_back(it->first);
         }
+    }
+
+    for(std::vector<int>::iterator it = handles.begin(); it != handles.end(); ++it)
+    {
+        PublisherProxy *proxy = publisherProxies[*it];
+        if(proxy->publisher)
+            shutdownPublisher(p, *it);
+        if(proxy->imageTransportPublisher)
+            imageTransportShutdownPublisher(p, *it);
     }
 }
 
 void shutdownTransientServiceClients(SScriptCallBack *p)
 {
+    std::vector<int> handles;
+
     for(std::map<int, ServiceClientProxy *>::iterator it = serviceClientProxies.begin(); it != serviceClientProxies.end(); ++it)
     {
         if(it->second->destroyAfterSimulationStop)
         {
-            shutdownServiceClient(p, it->first);
+            handles.push_back(it->first);
         }
+    }
+
+    for(std::vector<int>::iterator it = handles.begin(); it != handles.end(); ++it)
+    {
+        shutdownServiceClient(p, *it);
     }
 }
 
 void shutdownTransientServiceServers(SScriptCallBack *p)
 {
+    std::vector<int> handles;
+
     for(std::map<int, ServiceServerProxy *>::iterator it = serviceServerProxies.begin(); it != serviceServerProxies.end(); ++it)
     {
         if(it->second->destroyAfterSimulationStop)
         {
-            shutdownServiceServer(p, it->first);
+            handles.push_back(it->first);
         }
+    }
+
+    for(std::vector<int>::iterator it = handles.begin(); it != handles.end(); ++it)
+    {
+        shutdownServiceServer(p, *it);
     }
 }
 
