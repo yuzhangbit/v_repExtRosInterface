@@ -27,7 +27,12 @@ struct ScriptCallback
     std::string name;
 };
 
-struct SubscriberProxy
+struct Proxy
+{
+    bool destroyAfterSimulationStop;
+};
+
+struct SubscriberProxy : Proxy
 {
     int handle;
     std::string topicName;
@@ -37,7 +42,7 @@ struct SubscriberProxy
     image_transport::Subscriber imageTransportSubscriber;
 };
 
-struct PublisherProxy
+struct PublisherProxy : Proxy
 {
     int handle;
     std::string topicName;
@@ -46,7 +51,7 @@ struct PublisherProxy
     image_transport::Publisher imageTransportPublisher;
 };
 
-struct ServiceClientProxy
+struct ServiceClientProxy : Proxy
 {
     int handle;
     std::string serviceName;
@@ -54,7 +59,7 @@ struct ServiceClientProxy
     ros::ServiceClient client;
 };
 
-struct ServiceServerProxy
+struct ServiceServerProxy : Proxy
 {
     int handle;
     std::string serviceName;

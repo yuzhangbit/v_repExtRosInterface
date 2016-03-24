@@ -27,6 +27,16 @@ std::map<int, PublisherProxy *> publisherProxies;
 std::map<int, ServiceClientProxy *> serviceClientProxies;
 std::map<int, ServiceServerProxy *> serviceServerProxies;
 
+bool shouldProxyBeDestroyedAfterSimulationStop(SScriptCallBack *p)
+{
+    int property;
+    int associatedObject;
+    if(simGetScriptProperty(p->scriptID, &property, &associatedObject) == -1)
+        return false;
+    property &= ~sim_scripttype_threaded;
+    return simGetSimulationState() != sim_simulation_stopped && !(property & (sim_scripttype_addonscript | sim_scripttype_addonfunction | sim_scripttype_customizationscript));
+}
+
 void ros_imtr_callback(const sensor_msgs::ImageConstPtr& msg, SubscriberProxy *subscriberProxy)
 {
     if(msg->is_bigendian)
@@ -64,6 +74,7 @@ void ros_imtr_callback(const sensor_msgs::ImageConstPtr& msg, SubscriberProxy *s
 void subscribe(SScriptCallBack * p, const char * cmd, subscribe_in * in, subscribe_out * out)
 {
     SubscriberProxy *subscriberProxy = new SubscriberProxy();
+    subscriberProxy->destroyAfterSimulationStop = shouldProxyBeDestroyedAfterSimulationStop(p);
     subscriberProxy->handle = subscriberProxyNextHandle++;
     subscriberProxy->topicName = in->topicName;
     subscriberProxy->topicType = in->topicType;
@@ -102,6 +113,7 @@ void shutdownSubscriber(SScriptCallBack * p, const char * cmd, shutdownSubscribe
 void advertise(SScriptCallBack * p, const char * cmd, advertise_in * in, advertise_out * out)
 {
     PublisherProxy *publisherProxy = new PublisherProxy();
+    publisherProxy->destroyAfterSimulationStop = shouldProxyBeDestroyedAfterSimulationStop(p);
     publisherProxy->handle = publisherProxyNextHandle++;
     publisherProxy->topicName = in->topicName;
     publisherProxy->topicType = in->topicType;
@@ -157,6 +169,7 @@ void publish(SScriptCallBack * p, const char * cmd, publish_in * in, publish_out
 void serviceClient(SScriptCallBack * p, const char * cmd, serviceClient_in * in, serviceClient_out * out)
 {
     ServiceClientProxy *serviceClientProxy = new ServiceClientProxy();
+    serviceClientProxy->destroyAfterSimulationStop = shouldProxyBeDestroyedAfterSimulationStop(p);
     serviceClientProxy->handle = serviceClientProxyNextHandle++;
     serviceClientProxy->serviceName = in->serviceName;
     serviceClientProxy->serviceType = in->serviceType;
@@ -212,6 +225,7 @@ void call(SScriptCallBack * p, const char * cmd, call_in * in, call_out * out)
 void advertiseService(SScriptCallBack * p, const char * cmd, advertiseService_in * in, advertiseService_out * out)
 {
     ServiceServerProxy *serviceServerProxy = new ServiceServerProxy();
+    serviceServerProxy->destroyAfterSimulationStop = shouldProxyBeDestroyedAfterSimulationStop(p);
     serviceServerProxy->handle = serviceServerProxyNextHandle++;
     serviceServerProxy->serviceName = in->serviceName;
     serviceServerProxy->serviceType = in->serviceType;
@@ -282,6 +296,7 @@ void sendTransforms(SScriptCallBack * p, const char * cmd, sendTransforms_in * i
 void imageTransportSubscribe(SScriptCallBack *p, const char *cmd, imageTransportSubscribe_in *in, imageTransportSubscribe_out *out)
 {
     SubscriberProxy *subscriberProxy = new SubscriberProxy();
+    subscriberProxy->destroyAfterSimulationStop = shouldProxyBeDestroyedAfterSimulationStop(p);
     subscriberProxy->handle = subscriberProxyNextHandle++;
     subscriberProxy->topicName = in->topicName;
     subscriberProxy->topicType = "@image_transport";
@@ -315,6 +330,7 @@ void imageTransportShutdownSubscriber(SScriptCallBack *p, const char *cmd, image
 void imageTransportAdvertise(SScriptCallBack *p, const char *cmd, imageTransportAdvertise_in *in, imageTransportAdvertise_out *out)
 {
     PublisherProxy *publisherProxy = new PublisherProxy();
+    publisherProxy->destroyAfterSimulationStop = shouldProxyBeDestroyedAfterSimulationStop(p);
     publisherProxy->handle = publisherProxyNextHandle++;
     publisherProxy->topicName = in->topicName;
     publisherProxy->topicType = "@image_transport";
@@ -400,6 +416,64 @@ void shutdown()
     delete imtr;
     delete tfbr;
     delete nh;
+}
+
+void shutdownTransientSubscribers(SScriptCallBack *p)
+{
+    for(std::map<int, SubscriberProxy *>::iterator it = subscriberProxies.begin(); it != subscriberProxies.end(); ++it)
+    {
+        if(it->second->destroyAfterSimulationStop)
+        {
+            if(it->second->subscriber)
+                shutdownSubscriber(p, it->first);
+            if(it->second->imageTransportSubscriber)
+                imageTransportShutdownSubscriber(p, it->first);
+        }
+    }
+}
+
+void shutdownTransientPublishers(SScriptCallBack *p)
+{
+    for(std::map<int, PublisherProxy *>::iterator it = publisherProxies.begin(); it != publisherProxies.end(); ++it)
+    {
+        if(it->second->destroyAfterSimulationStop)
+        {
+            if(it->second->publisher)
+                shutdownPublisher(p, it->first);
+            if(it->second->imageTransportPublisher)
+                imageTransportShutdownPublisher(p, it->first);
+        }
+    }
+}
+
+void shutdownTransientServiceClients(SScriptCallBack *p)
+{
+    for(std::map<int, ServiceClientProxy *>::iterator it = serviceClientProxies.begin(); it != serviceClientProxies.end(); ++it)
+    {
+        if(it->second->destroyAfterSimulationStop)
+        {
+            shutdownServiceClient(p, it->first);
+        }
+    }
+}
+
+void shutdownTransientServiceServers(SScriptCallBack *p)
+{
+    for(std::map<int, ServiceServerProxy *>::iterator it = serviceServerProxies.begin(); it != serviceServerProxies.end(); ++it)
+    {
+        if(it->second->destroyAfterSimulationStop)
+        {
+            shutdownServiceServer(p, it->first);
+        }
+    }
+}
+
+void shutdownTransientProxies(SScriptCallBack *p)
+{
+    shutdownTransientSubscribers(p);
+    shutdownTransientPublishers(p);
+    shutdownTransientServiceClients(p);
+    shutdownTransientServiceServers(p);
 }
 
 // This is the plugin start routine (called just once, just after the plugin was loaded):
@@ -506,6 +580,7 @@ VREP_DLLEXPORT void* v_repMessage(int message,int* auxiliaryData,void* customDat
     if (message==sim_message_eventcallback_simulationended)
     { 
         // Simulation just ended
+        shutdownTransientProxies(nullptr /* XXX: which SScriptCallBack struct? */);
     }
 
     // Keep following unchanged:
