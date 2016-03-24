@@ -8,7 +8,7 @@
 #define PLUGIN_VERSION 5 // 5 since 3.3.1 (using stacks to exchange data with scripts)
 
 #define CONCAT(x,y,z) x y z
-#define strConCat(x,y,z)	CONCAT(x,y,z)
+#define strConCat(x,y,z) CONCAT(x,y,z)
 
 LIBRARY vrepLib; // the V-REP library that we will dynamically load and bind
 
@@ -29,30 +29,30 @@ std::map<int, ServiceServerProxy *> serviceServerProxies;
 
 void ros_imtr_callback(const sensor_msgs::ImageConstPtr& msg, SubscriberProxy *subscriberProxy)
 {
-	if(msg->is_bigendian)
+    if(msg->is_bigendian)
     {
         std::cerr << "ros_imtr_callback: error: big endian image not supported" << std::endl;
         return;
     }
 
-	int data_len = msg->step * msg->height;
+    int data_len = msg->step * msg->height;
 
     imageTransportCallback_in in_args;
     imageTransportCallback_out out_args;
 
     in_args.width = msg->width;
-	in_args.height = msg->height;
+    in_args.height = msg->height;
     in_args.data.resize(data_len);
 
-	for(unsigned int i = 0; i < msg->height; i++)
-	{
-		int msg_idx = (msg->height - i - 1) * msg->step;
-		int buf_idx = i * msg->step;
-		for(unsigned int j = 0; j < msg->step; j++)
+    for(unsigned int i = 0; i < msg->height; i++)
+    {
+        int msg_idx = (msg->height - i - 1) * msg->step;
+        int buf_idx = i * msg->step;
+        for(unsigned int j = 0; j < msg->step; j++)
         {
             in_args.data[buf_idx + j] = msg->data[msg_idx + j];
         }
-	}
+    }
 
     if(!imageTransportCallback(subscriberProxy->topicCallback.scriptId, subscriberProxy->topicCallback.name.c_str(), &in_args, &out_args))
     {
@@ -352,27 +352,27 @@ void imageTransportPublish(SScriptCallBack *p, const char *cmd, imageTransportPu
 
     PublisherProxy *publisherProxy = publisherProxies[in->publisherHandle];
 
-	sensor_msgs::Image image_msg;
+    sensor_msgs::Image image_msg;
     image_msg.header.stamp = ros::Time::now();
     image_msg.header.frame_id = in->frame_id;
-	image_msg.encoding = sensor_msgs::image_encodings::RGB8;
-	image_msg.width = in->width;
-	image_msg.height = in->height;
-	image_msg.step = image_msg.width * 3;
+    image_msg.encoding = sensor_msgs::image_encodings::RGB8;
+    image_msg.width = in->width;
+    image_msg.height = in->height;
+    image_msg.step = image_msg.width * 3;
 
-	int data_len = image_msg.step * image_msg.height;
-	image_msg.data.resize(data_len);
-	image_msg.is_bigendian = 0;
+    int data_len = image_msg.step * image_msg.height;
+    image_msg.data.resize(data_len);
+    image_msg.is_bigendian = 0;
 
-	for(unsigned int i = 0; i < image_msg.height; i++)
-	{
-		int msg_idx = (image_msg.height - i - 1) * image_msg.step;
-		int buf_idx = i * image_msg.step;
-		for(unsigned int j = 0; j < image_msg.step; j++)
+    for(unsigned int i = 0; i < image_msg.height; i++)
+    {
+        int msg_idx = (image_msg.height - i - 1) * image_msg.step;
+        int buf_idx = i * image_msg.step;
+        for(unsigned int j = 0; j < image_msg.step; j++)
         {
-			image_msg.data[msg_idx + j] = in->data[buf_idx + j];
+            image_msg.data[msg_idx + j] = in->data[buf_idx + j];
         }
-	}
+    }
 
     publisherProxy->imageTransportPublisher.publish(image_msg);
 }
@@ -405,111 +405,111 @@ void shutdown()
 // This is the plugin start routine (called just once, just after the plugin was loaded):
 VREP_DLLEXPORT unsigned char v_repStart(void* reservedPointer,int reservedInt)
 {
-	// Dynamically load and bind V-REP functions:
-	// ******************************************
-	// 1. Figure out this plugin's directory:
-	char curDirAndFile[1024];
-	getcwd(curDirAndFile, sizeof(curDirAndFile));
+    // Dynamically load and bind V-REP functions:
+    // ******************************************
+    // 1. Figure out this plugin's directory:
+    char curDirAndFile[1024];
+    getcwd(curDirAndFile, sizeof(curDirAndFile));
 
-	std::string currentDirAndPath(curDirAndFile);
-	// 2. Append the V-REP library's name:
-	std::string temp(currentDirAndPath);
-	#ifdef _WIN32
-		temp+="\\v_rep.dll";
-	#elif defined (__linux)
-		temp+="/libv_rep.so";
-	#elif defined (__APPLE__)
-		temp+="/libv_rep.dylib";
-	#endif
+    std::string currentDirAndPath(curDirAndFile);
+    // 2. Append the V-REP library's name:
+    std::string temp(currentDirAndPath);
+    #ifdef _WIN32
+        temp+="\\v_rep.dll";
+    #elif defined (__linux)
+        temp+="/libv_rep.so";
+    #elif defined (__APPLE__)
+        temp+="/libv_rep.dylib";
+    #endif
 
-	// 3. Load the V-REP library:
-	vrepLib=loadVrepLibrary(temp.c_str());
-	if (vrepLib==NULL)
-	{
-		std::cout << "Error, could not find or correctly load the V-REP library. Cannot start 'ROS' plugin.\n";
-		return 0; // Means error, V-REP will unload this plugin
-	}
-	if (getVrepProcAddresses(vrepLib)==0)
-	{
-		std::cout << "Error, could not find all required functions in the V-REP library. Cannot start 'ROS' plugin.\n";
-		unloadVrepLibrary(vrepLib);
-		return 0; // Means error, V-REP will unload this plugin
-	}
-	// ******************************************
+    // 3. Load the V-REP library:
+    vrepLib=loadVrepLibrary(temp.c_str());
+    if (vrepLib==NULL)
+    {
+        std::cout << "Error, could not find or correctly load the V-REP library. Cannot start 'ROS' plugin.\n";
+        return 0; // Means error, V-REP will unload this plugin
+    }
+    if (getVrepProcAddresses(vrepLib)==0)
+    {
+        std::cout << "Error, could not find all required functions in the V-REP library. Cannot start 'ROS' plugin.\n";
+        unloadVrepLibrary(vrepLib);
+        return 0; // Means error, V-REP will unload this plugin
+    }
+    // ******************************************
 
-	// Check the version of V-REP:
-	// ******************************************
-	int vrepVer;
-	simGetIntegerParameter(sim_intparam_program_version,&vrepVer);
-	if (vrepVer<20605) // if V-REP version is smaller than 2.06.04
-	{
-		std::cout << "Sorry, your V-REP copy is somewhat old. Cannot start 'ROS' plugin.\n";
-		unloadVrepLibrary(vrepLib);
-		return 0; // Means error, V-REP will unload this plugin
-	}
-	// ******************************************
-	
+    // Check the version of V-REP:
+    // ******************************************
+    int vrepVer;
+    simGetIntegerParameter(sim_intparam_program_version,&vrepVer);
+    if (vrepVer<20605) // if V-REP version is smaller than 2.06.04
+    {
+        std::cout << "Sorry, your V-REP copy is somewhat old. Cannot start 'ROS' plugin.\n";
+        unloadVrepLibrary(vrepLib);
+        return 0; // Means error, V-REP will unload this plugin
+    }
+    // ******************************************
+    
 
-	if(!initialize()) 
-	{
-		std::cout << "ROS master is not running. Cannot start 'ROS' plugin.\n";
-		return 0; //If the master is not running then the plugin is not loaded.
-	}
-	
-	// Register script functions and variables:
+    if(!initialize()) 
+    {
+        std::cout << "ROS master is not running. Cannot start 'ROS' plugin.\n";
+        return 0; //If the master is not running then the plugin is not loaded.
+    }
+    
+    // Register script functions and variables:
     if(!registerScriptStuff())
     {
         return 0;
     }
 
-	return PLUGIN_VERSION; // initialization went fine, we return the version number of this plugin (can be queried with simGetModuleName)
+    return PLUGIN_VERSION; // initialization went fine, we return the version number of this plugin (can be queried with simGetModuleName)
 }
 
 // This is the plugin end routine (called just once, when V-REP is ending, i.e. releasing this plugin):
 VREP_DLLEXPORT void v_repEnd()
 {
-	shutdown();
-	unloadVrepLibrary(vrepLib); // release the library
+    shutdown();
+    unloadVrepLibrary(vrepLib); // release the library
 }
 
 // This is the plugin messaging routine (i.e. V-REP calls this function very often, with various messages):
 VREP_DLLEXPORT void* v_repMessage(int message,int* auxiliaryData,void* customData,int* replyData)
 { 
-	// This is called quite often. Just watch out for messages/events you want to handle
-	// Keep following 4 lines at the beginning and unchanged:
-	int errorModeSaved;
-	simGetIntegerParameter(sim_intparam_error_report_mode,&errorModeSaved);
-	simSetIntegerParameter(sim_intparam_error_report_mode,sim_api_errormessage_ignore);
-	void* retVal=NULL;
+    // This is called quite often. Just watch out for messages/events you want to handle
+    // Keep following 4 lines at the beginning and unchanged:
+    int errorModeSaved;
+    simGetIntegerParameter(sim_intparam_error_report_mode,&errorModeSaved);
+    simSetIntegerParameter(sim_intparam_error_report_mode,sim_api_errormessage_ignore);
+    void* retVal=NULL;
 
-	// Here we can intercept many messages from V-REP (actually callbacks). Only the most important messages are listed here:
+    // Here we can intercept many messages from V-REP (actually callbacks). Only the most important messages are listed here:
 
-	if (message==sim_message_eventcallback_instancepass)
-	{ 
-		// This message is sent each time the scene was rendered (well, shortly after) (very often)
-		// When a simulation is not running, but you still need to execute some commands, then put some code here
+    if (message==sim_message_eventcallback_instancepass)
+    { 
+        // This message is sent each time the scene was rendered (well, shortly after) (very often)
+        // When a simulation is not running, but you still need to execute some commands, then put some code here
         ros::spinOnce();
-	}
+    }
 
-	if (message==sim_message_eventcallback_mainscriptabouttobecalled)
-	{ 
-		// Main script is about to be run (only called while a simulation is running (and not paused!))
-		//
-		// This is a good location to execute simulation commands
-	}
+    if (message==sim_message_eventcallback_mainscriptabouttobecalled)
+    { 
+        // Main script is about to be run (only called while a simulation is running (and not paused!))
+        //
+        // This is a good location to execute simulation commands
+    }
 
-	if (message==sim_message_eventcallback_simulationabouttostart)
-	{ 
-	    // Simulation is about to start
-	}
+    if (message==sim_message_eventcallback_simulationabouttostart)
+    { 
+        // Simulation is about to start
+    }
 
-	if (message==sim_message_eventcallback_simulationended)
-	{ 
-		// Simulation just ended
-	}
+    if (message==sim_message_eventcallback_simulationended)
+    { 
+        // Simulation just ended
+    }
 
-	// Keep following unchanged:
-	simSetIntegerParameter(sim_intparam_error_report_mode,errorModeSaved); // restore previous settings
-	return retVal;
+    // Keep following unchanged:
+    simSetIntegerParameter(sim_intparam_error_report_mode,errorModeSaved); // restore previous settings
+    return retVal;
 }
 
