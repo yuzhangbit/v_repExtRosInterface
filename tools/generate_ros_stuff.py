@@ -12,6 +12,26 @@ def is_identifier(s):
 
 # parse a type specification, such as Header, geometry_msgs/Point, or string[12]
 class TypeSpec:
+    ctype_builtin = {
+            'bool':         'uint8_t',
+            'int8':         'int8_t',
+            'uint8':        'uint8_t',
+            'int16':        'int16_t',
+            'uint16':       'uint16_t',
+            'int32':        'int32_t',
+            'uint32':       'uint32_t',
+            'int64':        'int64_t',
+            'uint64':       'uint64_t',
+            'float32':      'float',
+            'float64':      'double',
+            'string':       'std::string',
+            'time':         'ros::Time',
+            'duration':     'ros::Duration'
+    }
+    deprecated_builtins = {
+            'byte':         'int8',
+            'char':         'uint8'
+    }
     def __init__(self, s):
         self.array = False
         self.array_size = None
@@ -23,10 +43,9 @@ class TypeSpec:
                 self.array_size = int(m.group(2))
         # perform substitutions:
         s = resolve_msg.get(s, s)
-        if s == 'byte': s = 'int8' # deprecated
-        if s == 'char': s = 'uint8' # deprecated
+        if s in self.deprecated_builtins: s = self.deprecated_builtins[s]
         # check builtins:
-        self.builtin = s in ('bool', 'int8', 'uint8', 'int16', 'uint16', 'int32', 'uint32', 'int64', 'uint64', 'float32', 'float64', 'string', 'time', 'duration')
+        self.builtin = s in self.ctype_builtin
         self.fullname = s
         if self.builtin:
             self.mtype = s
@@ -47,22 +66,7 @@ class TypeSpec:
 
     # get C++ type declaration
     def ctype(self):
-        if self.builtin:
-            if self.mtype == 'bool': return 'uint8_t'
-            if self.mtype == 'int8': return 'int8_t'
-            if self.mtype == 'uint8': return 'uint8_t'
-            if self.mtype == 'int16': return 'int16_t'
-            if self.mtype == 'uint16': return 'uint16_t'
-            if self.mtype == 'int32': return 'int32_t'
-            if self.mtype == 'uint32': return 'uint32_t'
-            if self.mtype == 'int64': return 'int64_t'
-            if self.mtype == 'uint64': return 'uint64_t'
-            if self.mtype == 'float32': return 'float'
-            if self.mtype == 'float64': return 'double'
-            if self.mtype == 'string': return 'std::string'
-            if self.mtype == 'time': return 'ros::Time'
-            if self.mtype == 'duration': return 'ros::Duration'
-            raise Exception('can\'t get ctype of builtin %s' % self.mtype)
+        if self.builtin: return self.ctype_builtin[self.mtype]
         return self.package + '::' + self.mtype
 
     def __str__(self):
