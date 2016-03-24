@@ -536,24 +536,41 @@ def main(argc, argv):
 ''') 
 
 
+    # get msg definitions
+    print('Getting msg definitions...')
+    msg_fields = {}
+    for msg in sorted(set(resolve_msg.values())):
+        print('Getting definition of msg %s...' % msg)
+        try:
+            msg_fields[msg] = get_msg_fields(msg)
+        except subprocess.CalledProcessError:
+            print('WARNING: bad msg: %s' % msg)
+            continue
+
+    # get srv definitions
+    print('Getting srv definitions...')
+    srv_fields = {}
+    for srv in sorted(srv_list):
+        print('Getting definition of srv %s...' % srv)
+        try:
+            srv_fields[srv] = get_srv_fields(srv)
+        except subprocess.CalledProcessError:
+            print('WARNING: bad srv: %s' % srv)
+            continue
+
     print('Generating header...')
     # for each msg/srv include corresponding header
-    for msg in set(resolve_msg.values()):
+    for msg in sorted(msg_fields):
         f_msg_h.write('#include <%s.h>\n' % msg)
     f_msg_h.write('\n')
-    for srv in srv_list:
+    for srv in sorted(srv_fields):
         f_srv_h.write('#include <%s.h>\n' % srv)
     f_srv_h.write('\n')
 
     # for each msg generate cpp, h, adv, pub, sub code
-    for msg in sorted(resolve_msg.values()):
+    for msg, fields in sorted(msg_fields.items()):
         print('Generating code for message %s...' % msg)
         gt = TypeSpec(msg)
-        try:
-            fields = get_msg_fields(msg)
-        except subprocess.CalledProcessError:
-            print('WARNING: bad message: %s' % msg)
-            continue
         d = {'norm': gt.normalized(), 'ctype': gt.ctype(), 'fn': gt.fullname}
         generate_msg_cpp(gt, fields, d, f_msg_cpp)
         generate_msg_h(gt, fields, d, f_msg_h)
@@ -561,14 +578,9 @@ def main(argc, argv):
         generate_msg_pub(gt, fields, d, f_msg_pub)
         generate_msg_sub(gt, fields, d, f_msg_sub)
 
-    for srv in sorted(srv_list):
+    for srv, (fields_in, fields_out) in sorted(srv_fields.items()):
         print('Generating code for service %s...' % srv)
         gt = TypeSpec(srv)
-        try:
-            fields_in, fields_out = get_srv_fields(srv)
-        except subprocess.CalledProcessError:
-            print('WARNING: bad service: %s' % srv)
-            continue
         d = {'norm': gt.normalized(), 'ctype': gt.ctype(), 'fn': gt.fullname}
         generate_srv_cli(gt, fields_in, fields_out, d, f_srv_cli)
         generate_srv_srv(gt, fields_in, fields_out, d, f_srv_srv)
