@@ -1,6 +1,7 @@
 #include <vrep_ros_plugin.h>
 
 #include <tf/transform_broadcaster.h>
+#include <sensor_msgs/image_encodings.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 
