@@ -340,7 +340,7 @@ void ros_callback__{norm}(const boost::shared_ptr<{ctype} const>& msg, Subscribe
     catch(exception& ex)
     {{
         if(stack != -1)
-            simReleaseStackE(stack); // don't throw
+            simReleaseStack(stack); // don't throw
         std::string msg = "ros_callback__{norm}: ";
         msg += ex.what();
         simSetLastError(proxy->topicCallback.name.c_str(), msg.c_str());
