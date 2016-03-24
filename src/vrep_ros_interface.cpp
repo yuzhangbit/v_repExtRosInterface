@@ -1,4 +1,4 @@
-#include <vrep_ros_plugin.h>
+#include <vrep_ros_interface.h>
 
 #include <tf/transform_broadcaster.h>
 #include <sensor_msgs/image_encodings.h>
@@ -381,7 +381,7 @@ bool initialize()
 {
     int argc = 0;
     char *argv[] = {};
-    ros::init(argc, argv, "vrep_ros_plugin");
+    ros::init(argc, argv, "vrep_ros_interface");
 
     if(!ros::master::check())
         return false;

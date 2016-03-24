@@ -518,7 +518,7 @@ def main(argc, argv):
 
 #include <ros_msg_builtin_io.h>
 #include <ros/ros.h>
-#include <vrep_ros_plugin.h>
+#include <vrep_ros_interface.h>
 
 ''') 
     f_srv_cpp.write('''#include <ros_msg_io.h>
@@ -531,7 +531,7 @@ def main(argc, argv):
 
 #include <ros_msg_builtin_io.h>
 #include <ros/ros.h>
-#include <vrep_ros_plugin.h>
+#include <vrep_ros_interface.h>
 
 ''') 
 
