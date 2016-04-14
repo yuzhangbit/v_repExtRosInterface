@@ -10,6 +10,8 @@ resolve_msg = {}
 def is_identifier(s):
     return re.match('^[a-zA-Z_][a-zA-Z0-9_]*$', s)
 
+fast_write_types = {'int32': 'Int32', 'float32': 'Float', 'float64': 'Double'}
+
 # parse a type specification, such as Header, geometry_msgs/Point, or string[12]
 class TypeSpec:
     ctype_builtin = {
@@ -164,7 +166,22 @@ void write__{norm}(const {ctype}& msg, int stack)
         d1['nf'] = '{}::{}'.format(gt.ctype(), n)
         d1['norm1'] = t.normalized()
         if t.array:
-            wf += '''
+            if t.builtin and t.mtype in fast_write_types:
+                wf += '''
+        try
+        {{
+            // write field '{n}' (using fast specialized function)
+            simPushStringOntoStackE(stack, "{n}", 0);
+            simPush{fast_write_type}TableOntoStackE(stack, &(msg.{n}[0]), msg.{n}.size());
+        }}
+        catch(exception& ex)
+        {{
+            std::string msg = "field '{n}': ";
+            msg += ex.what();
+            throw exception(msg);
+        }}'''.format(fast_write_type=fast_write_types[t.mtype], **d1)
+            else:
+                wf += '''
         try
         {{
             // write field '{n}'
@@ -246,11 +263,38 @@ void read__{norm}(int stack, {ctype} *msg)
         d1['nf'] = '{}::{}'.format(gt.ctype(), n)
         d1['norm1'] = t.normalized()
         if t.array:
-            if t.array_size:
-                ins = 'msg->{n}[i] = (v);'.format(**d1)
+            if t.builtin and t.mtype in fast_write_types:
+                if t.array_size:
+                    reserve_space = '// field has fixed size -> no need to reserve space into vector'
+                else:
+                    reserve_space = 'msg->{n}.resize(sz);'.format(**d1)
+                rf += '''
+                else if(strcmp(str, "{n}") == 0)
+                {{
+                    try
+                    {{
+                        // read field '{n}' (using fast specialized function)
+                        int sz = simGetStackTableInfoE(stack, 0);
+                        if(sz < 0)
+                            throw exception("expected array");
+                        if(simGetStackTableInfoE(stack, 2) != 1)
+                            throw exception("fast_write_type reader exception #1");
+                        {reserve_space}
+                        simGetStack{fast_write_type}TableE(stack, &(msg->{n}[0]), sz);
+                    }}
+                    catch(exception& ex)
+                    {{
+                        std::string msg = "field {n}: ";
+                        msg += ex.what();
+                        throw exception(msg);
+                    }}
+                }}'''.format(reserve_space=reserve_space, fast_write_type=fast_write_types[t.mtype], **d1)
             else:
-                ins = 'msg->{n}.push_back(v);'.format(**d1)
-            rf += '''
+                if t.array_size:
+                    ins = 'msg->{n}[i] = (v);'.format(**d1)
+                else:
+                    ins = 'msg->{n}.push_back(v);'.format(**d1)
+                rf += '''
                 else if(strcmp(str, "{n}") == 0)
                 {{
                     try
