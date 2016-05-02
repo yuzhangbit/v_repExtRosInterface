@@ -129,13 +129,13 @@ def get_srv_fields(srv_name):
 
 def generate_msg_wr_h(gt, fields, d, f):
     s = '''
-void write__{norm}(const {ctype}& msg, int stack);
+void write__{norm}(const {ctype}& msg, int stack, const WriteOptions *opt = NULL);
 '''.format(**d)
     f.write(s)
 
 def generate_msg_rd_h(gt, fields, d, f):
     s = '''
-void read__{norm}(int stack, {ctype} *msg);
+void read__{norm}(int stack, {ctype} *msg, const ReadOptions *opt = NULL);
 '''.format(**d)
     f.write(s)
 
@@ -152,7 +152,7 @@ def generate_msg_h(gt, fields, d, f):
 
 def generate_msg_wr_cpp(gt, fields, d, f):
     wf = '''
-void write__{norm}(const {ctype}& msg, int stack)
+void write__{norm}(const {ctype}& msg, int stack, const WriteOptions *opt)
 {{
     try
     {{
@@ -180,6 +180,27 @@ void write__{norm}(const {ctype}& msg, int stack)
             msg += ex.what();
             throw exception(msg);
         }}'''.format(fast_write_type=fast_write_types[t.mtype], **d1)
+            elif t.builtin and t.mtype == 'uint8':
+                wf += '''
+        try
+        {{
+            // write field '{n}' (using fast specialized function)
+            simPushStringOntoStackE(stack, "{n}", 0);
+#ifdef HAVE_STACK_PUSH_UINT8TABLE
+            if(opt && opt->uint8array_as_string)
+                simPushStringOntoStackE(stack, (simChar*)&(msg.{n}[0]), msg.{n}.size());
+            else
+                simPushUInt8TableOntoStackE(stack, &(msg.{n}[0]), msg.{n}.size());
+#else
+            simPushStringOntoStackE(stack, (simChar*)&(msg.{n}[0]), msg.{n}.size());
+#endif
+        }}
+        catch(exception& ex)
+        {{
+            std::string msg = "field '{n}': ";
+            msg += ex.what();
+            throw exception(msg);
+        }}'''.format(**d1)
             else:
                 wf += '''
         try
@@ -189,8 +210,8 @@ void write__{norm}(const {ctype}& msg, int stack)
             simPushTableOntoStackE(stack);
             for(int i = 0; i < msg.{n}.size(); i++)
             {{
-                write__int32(i + 1, stack);
-                write__{norm1}(msg.{n}[i], stack);
+                write__int32(i + 1, stack, opt);
+                write__{norm1}(msg.{n}[i], stack, opt);
                 simInsertDataIntoStackTableE(stack);
             }}
             simInsertDataIntoStackTableE(stack);
@@ -207,7 +228,7 @@ void write__{norm}(const {ctype}& msg, int stack)
         {{
             // write field '{n}'
             simPushStringOntoStackE(stack, "{n}", 0);
-            write__{norm1}(msg.{n}, stack);
+            write__{norm1}(msg.{n}, stack, opt);
             simInsertDataIntoStackTableE(stack);
         }}
         catch(exception& ex)
@@ -231,7 +252,7 @@ void write__{norm}(const {ctype}& msg, int stack)
 
 def generate_msg_rd_cpp(gt, fields, d, f):
     rf = '''
-void read__{norm}(int stack, {ctype} *msg)
+void read__{norm}(int stack, {ctype} *msg, const ReadOptions *opt)
 {{
     try
     {{
@@ -289,6 +310,63 @@ void read__{norm}(int stack, {ctype} *msg)
                         throw exception(msg);
                     }}
                 }}'''.format(reserve_space=reserve_space, fast_write_type=fast_write_types[t.mtype], **d1)
+            elif t.builtin and t.mtype == 'uint8':
+                if t.array_size:
+                    reserve_space = '// field has fixed size -> no need to reserve space into vector'
+                else:
+                    reserve_space = 'msg->{n}.resize(sz);'.format(**d1)
+                rf += '''
+                else if(strcmp(str, "{n}") == 0)
+                {{
+                    try
+                    {{
+                        // read field '{n}' (using fast specialized function)
+                        int sz = simGetStackTableInfoE(stack, 0);
+                        if(sz < 0)
+                            throw exception("expected uint8 array");
+                        if(simGetStackTableInfoE(stack, 2) != 1)
+                            throw exception("fast_write_type uint8[] reader exception #1");
+                        {reserve_space}
+#ifdef HAVE_STACK_PUSH_UINT8TABLE
+                        if(opt && opt->uint8array_as_string)
+                        {{
+                            simChar *str;
+                            simInt strSz;
+                            if((str = simGetStackStringValueE(stack, &strSz)) != NULL && strSz > 0)
+                            {{
+                                /*
+                                 * XXX: if an alternative version of simGetStackStringValue woudl exist
+                                 * working on an externally allocated buffer, we won't need this memcpy:
+                                 */
+                                std::memcpy(&(msg->{n}[0]), str, sz);
+                            }}
+                            else throw exception("string read error when trying to read uint8[]");
+                        }}
+                        else
+                            simGetStackUInt8TableE(stack, &(msg->{n}[0]), sz);
+#else
+                        {{
+                            simChar *str;
+                            simInt strSz;
+                            if((str = simGetStackStringValueE(stack, &strSz)) != NULL && strSz > 0)
+                            {{
+                                /*
+                                 * XXX: if an alternative version of simGetStackStringValue woudl exist
+                                 * working on an externally allocated buffer, we won't need this memcpy:
+                                 */
+                                std::memcpy(&(msg->{n}[0]), str, sz);
+                            }}
+                            else throw exception("string read error when trying to read uint8[]");
+                        }}
+#endif
+                    }}
+                    catch(exception& ex)
+                    {{
+                        std::string msg = "field {n}: ";
+                        msg += ex.what();
+                        throw exception(msg);
+                    }}
+                }}'''.format(reserve_space=reserve_space, **d1)
             else:
                 if t.array_size:
                     ins = 'msg->{n}[i] = (v);'.format(**d1)
@@ -309,10 +387,10 @@ void read__{norm}(int stack, {ctype} *msg)
                         {{
                             simMoveStackItemToTopE(stack, oldsz1 - 1); // move key to top
                             int j;
-                            read__int32(stack, &j);
+                            read__int32(stack, &j, opt);
                             simMoveStackItemToTopE(stack, oldsz1 - 1); // move value to top
                             {ctype1} v;
-                            read__{norm1}(stack, &v);
+                            read__{norm1}(stack, &v, opt);
                             {ins}
                         }}
                     }}
@@ -330,7 +408,7 @@ void read__{norm}(int stack, {ctype} *msg)
                     try
                     {{
                         // read field '{n}'
-                        read__{norm1}(stack, &(msg->{n}));
+                        read__{norm1}(stack, &(msg->{n}), opt);
                     }}
                     catch(exception& ex)
                     {{
@@ -376,7 +454,7 @@ void ros_callback__{norm}(const boost::shared_ptr<{ctype} const>& msg, Subscribe
     try
     {{
         stack = simCreateStackE();
-        write__{norm}(*msg, stack);
+        write__{norm}(*msg, stack, &(proxy->wr_opt));
         simCallScriptFunctionExE(proxy->topicCallback.scriptId, proxy->topicCallback.name.c_str(), stack);
         simReleaseStackE(stack);
         stack = -1;
@@ -403,7 +481,7 @@ def generate_msg_pub(gt, fields, d, f):
     p = '''    else if(publisherProxy->topicType == "{fn}")
     {{
         {ctype} msg;
-        read__{norm}(p->stackID, &msg);
+        read__{norm}(p->stackID, &msg, &(publisherProxy->rd_opt));
         publisherProxy->publisher.publish(msg);
     }}
 '''.format(**d)
@@ -445,10 +523,10 @@ def generate_srv_call(gt, fields_in, fields_out, d, f):
     p = '''    else if(serviceClientProxy->serviceType == "{fn}")
     {{
         {ctype} srv;
-        read__{norm}Request(p->stackID, &(srv.request));
+        read__{norm}Request(p->stackID, &(srv.request), &(serviceClientProxy->rd_opt));
         if(serviceClientProxy->client.call(srv))
         {{
-            write__{norm}Response(srv.response, p->stackID);
+            write__{norm}Response(srv.response, p->stackID, &(serviceClientProxy->wr_opt));
             out->result = true;
         }}
         else
@@ -475,9 +553,9 @@ bool ros_srv_callback__{norm}({ctype}::Request& req, {ctype}::Response& res, Ser
     try
     {{
         stack = simCreateStackE();
-        write__{norm}Request(req, stack);
+        write__{norm}Request(req, stack, &(proxy->wr_opt));
         simCallScriptFunctionExE(proxy->serviceCallback.scriptId, proxy->serviceCallback.name.c_str(), stack);
-        read__{norm}Response(stack, &res);
+        read__{norm}Response(stack, &res, &(proxy->rd_opt));
         simReleaseStackE(stack);
         stack = -1;
         return true;
@@ -555,13 +633,14 @@ def main(argc, argv):
 
     f_msg_cpp.write('''#include <ros_msg_io.h>
 #include <v_repLib.h>
+#include <stubs.h>
+#include <cstring>
 
 ''')
     f_msg_h.write('''#ifndef VREP_ROS_PLUGIN__ROS_MSG_IO__H
 #define VREP_ROS_PLUGIN__ROS_MSG_IO__H
 
 #include <ros_msg_builtin_io.h>
-#include <ros/ros.h>
 #include <vrep_ros_interface.h>
 
 ''') 

@@ -26,7 +26,7 @@ add_custom_command(OUTPUT
 
 add_custom_command(OUTPUT
     ${CMAKE_BINARY_DIR}/generated/stubs.cpp ${CMAKE_BINARY_DIR}/generated/stubs.h
-    COMMAND python -m v_repStubsGen -H ${CMAKE_BINARY_DIR}/generated/stubs.h -C ${CMAKE_BINARY_DIR}/generated/stubs.cpp -I vrep_ros_interface.h ${CMAKE_SOURCE_DIR}/meta/callbacks.xml
+    COMMAND python -m v_repStubsGen -H ${CMAKE_BINARY_DIR}/generated/stubs.h -C ${CMAKE_BINARY_DIR}/generated/stubs.cpp ${CMAKE_SOURCE_DIR}/meta/callbacks.xml
     DEPENDS ${CMAKE_SOURCE_DIR}/meta/callbacks.xml)
 
 add_library(v_repExtRosInterface src/vrep_ros_interface.cpp generated/stubs.cpp src/ros_msg_builtin_io.cpp generated/ros_msg_io.cpp generated/ros_srv_io.cpp src/v_repLib.cpp)
