@@ -336,11 +336,11 @@ void read__{norm}(int stack, {ctype} *msg, const ReadOptions *opt)
 			{{
                             // read field '{n}' (using fast specialized function)
                             int sz = simGetStackTableInfoE(stack, 0);
-                            {reserve_space}
                             if(sz < 0)
                                 throw exception("expected uint8 array");
                             if(simGetStackTableInfoE(stack, 2) != 1)
                                 throw exception("fast_write_type uint8[] reader exception #1");
+                            {reserve_space}
                             simGetStackUInt8TableE(stack, &(msg->{n}[0]), sz);
 			}}
                     }}
