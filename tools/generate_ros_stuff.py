@@ -173,6 +173,7 @@ void write__{norm}(const {ctype}& msg, int stack, const WriteOptions *opt)
             // write field '{n}' (using fast specialized function)
             simPushStringOntoStackE(stack, "{n}", 0);
             simPush{fast_write_type}TableOntoStackE(stack, &(msg.{n}[0]), msg.{n}.size());
+            simInsertDataIntoStackTableE(stack);
         }}
         catch(exception& ex)
         {{
@@ -190,6 +191,7 @@ void write__{norm}(const {ctype}& msg, int stack, const WriteOptions *opt)
                 simPushStringOntoStackE(stack, (simChar*)&(msg.{n}[0]), msg.{n}.size());
             else
                 simPushUInt8TableOntoStackE(stack, &(msg.{n}[0]), msg.{n}.size());
+            simInsertDataIntoStackTableE(stack);
         }}
         catch(exception& ex)
         {{
