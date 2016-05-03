@@ -316,18 +316,18 @@ void read__{norm}(int stack, {ctype} *msg, const ReadOptions *opt)
                 {{
                     try
                     {{
-                        {reserve_space}
                         if(opt && opt->uint8array_as_string)
                         {{
                             // read field '{n}' (uint8[]) as string
                             simChar *str;
-                            simInt strSz;
-                            if((str = simGetStackStringValueE(stack, &strSz)) != NULL && strSz > 0)
+                            simInt sz;
+                            if((str = simGetStackStringValueE(stack, &sz)) != NULL && sz > 0)
                             {{
                                 /*
                                  * XXX: if an alternative version of simGetStackStringValue woudl exist
                                  * working on an externally allocated buffer, we won't need this memcpy:
                                  */
+                                {reserve_space}
                                 std::memcpy(&(msg->{n}[0]), str, sz);
                             }}
                             else throw exception("string read error when trying to read uint8[]");
@@ -336,6 +336,7 @@ void read__{norm}(int stack, {ctype} *msg, const ReadOptions *opt)
 			{{
                             // read field '{n}' (using fast specialized function)
                             int sz = simGetStackTableInfoE(stack, 0);
+                            {reserve_space}
                             if(sz < 0)
                                 throw exception("expected uint8 array");
                             if(simGetStackTableInfoE(stack, 2) != 1)
