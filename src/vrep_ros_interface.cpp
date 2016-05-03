@@ -615,7 +615,7 @@ VREP_DLLEXPORT void* v_repMessage(int message,int* auxiliaryData,void* customDat
     if (message==sim_message_eventcallback_simulationended)
     { 
         // Simulation just ended
-        shutdownTransientProxies(nullptr /* XXX: which SScriptCallBack struct? */);
+        shutdownTransientProxies(NULL /* XXX: which SScriptCallBack struct? */);
     }
 
     // Keep following unchanged:
