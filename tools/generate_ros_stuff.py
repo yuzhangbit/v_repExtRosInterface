@@ -186,14 +186,10 @@ void write__{norm}(const {ctype}& msg, int stack, const WriteOptions *opt)
         {{
             // write field '{n}' (using fast specialized function)
             simPushStringOntoStackE(stack, "{n}", 0);
-#ifdef HAVE_STACK_PUSH_UINT8TABLE
             if(opt && opt->uint8array_as_string)
                 simPushStringOntoStackE(stack, (simChar*)&(msg.{n}[0]), msg.{n}.size());
             else
                 simPushUInt8TableOntoStackE(stack, &(msg.{n}[0]), msg.{n}.size());
-#else
-            simPushStringOntoStackE(stack, (simChar*)&(msg.{n}[0]), msg.{n}.size());
-#endif
         }}
         catch(exception& ex)
         {{
@@ -320,16 +316,10 @@ void read__{norm}(int stack, {ctype} *msg, const ReadOptions *opt)
                 {{
                     try
                     {{
-                        // read field '{n}' (using fast specialized function)
-                        int sz = simGetStackTableInfoE(stack, 0);
-                        if(sz < 0)
-                            throw exception("expected uint8 array");
-                        if(simGetStackTableInfoE(stack, 2) != 1)
-                            throw exception("fast_write_type uint8[] reader exception #1");
                         {reserve_space}
-#ifdef HAVE_STACK_PUSH_UINT8TABLE
                         if(opt && opt->uint8array_as_string)
                         {{
+                            // read field '{n}' (uint8[]) as string
                             simChar *str;
                             simInt strSz;
                             if((str = simGetStackStringValueE(stack, &strSz)) != NULL && strSz > 0)
@@ -343,22 +333,15 @@ void read__{norm}(int stack, {ctype} *msg, const ReadOptions *opt)
                             else throw exception("string read error when trying to read uint8[]");
                         }}
                         else
+			{{
+                            // read field '{n}' (using fast specialized function)
+                            int sz = simGetStackTableInfoE(stack, 0);
+                            if(sz < 0)
+                                throw exception("expected uint8 array");
+                            if(simGetStackTableInfoE(stack, 2) != 1)
+                                throw exception("fast_write_type uint8[] reader exception #1");
                             simGetStackUInt8TableE(stack, &(msg->{n}[0]), sz);
-#else
-                        {{
-                            simChar *str;
-                            simInt strSz;
-                            if((str = simGetStackStringValueE(stack, &strSz)) != NULL && strSz > 0)
-                            {{
-                                /*
-                                 * XXX: if an alternative version of simGetStackStringValue woudl exist
-                                 * working on an externally allocated buffer, we won't need this memcpy:
-                                 */
-                                std::memcpy(&(msg->{n}[0]), str, sz);
-                            }}
-                            else throw exception("string read error when trying to read uint8[]");
-                        }}
-#endif
+			}}
                     }}
                     catch(exception& ex)
                     {{
