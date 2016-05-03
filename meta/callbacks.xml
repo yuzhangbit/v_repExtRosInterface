@@ -41,6 +41,19 @@
         <return>
         </return>
     </command>
+    <command name="subscriberTreatUInt8ArrayAsString">
+        <description>After calling this function, this subscriber will treat uint8 arrays as string. Using strings should be in general much faster that using int arrays in Lua.</description>
+        <see-also>
+            <!--command name="..." /-->
+        </see-also>
+        <params>
+            <param name="subscriberHandle" type="int">
+                <description>the subscriber handle</description>
+            </param>
+        </params>
+        <return>
+        </return>
+    </command>
     <command name="advertise">
         <description>Advertise a topic and create a topic publisher.</description>
         <see-also>
@@ -68,6 +81,19 @@
     </command>
     <command name="shutdownPublisher">
         <description>Shutdown the advertisement associated with this publisher.</description>
+        <see-also>
+            <!--command name="..." /-->
+        </see-also>
+        <params>
+            <param name="publisherHandle" type="int">
+                <description>the publisher handle</description>
+            </param>
+        </params>
+        <return>
+        </return>
+    </command>
+    <command name="publisherTreatUInt8ArrayAsString">
+        <description>After calling this function, this publisher will treat uint8 arrays as string. Using strings should be in general much faster that using int arrays in Lua.</description>
         <see-also>
             <!--command name="..." /-->
         </see-also>
@@ -130,6 +156,19 @@
         <return>
         </return>
     </command>
+    <command name="serviceClientTreatUInt8ArrayAsString">
+        <description>After calling this function, this service client will treat uint8 arrays as string. Using strings should be in general much faster that using int arrays in Lua.</description>
+        <see-also>
+            <!--command name="..." /-->
+        </see-also>
+        <params>
+            <param name="serviceClientHandle" type="int">
+                <description>the service client handle</description>
+            </param>
+        </params>
+        <return>
+        </return>
+    </command>
     <command name="call">
         <description>Call the service associated with this service client.</description>
         <see-also>
@@ -176,6 +215,19 @@
     </command>
     <command name="shutdownServiceServer">
         <description>Shutdown the service server.</description>
+        <see-also>
+            <!--command name="..." /-->
+        </see-also>
+        <params>
+            <param name="serviceServerHandle" type="int">
+                <description>the service server handle</description>
+            </param>
+        </params>
+        <return>
+        </return>
+    </command>
+    <command name="serviceServerTreatUInt8ArrayAsString">
+        <description>After calling this function, this service server will treat uint8 arrays as string. Using strings should be in general much faster that using int arrays in Lua.</description>
         <see-also>
             <!--command name="..." /-->
         </see-also>

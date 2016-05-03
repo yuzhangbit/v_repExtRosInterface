@@ -115,6 +115,17 @@ void shutdownSubscriber(SScriptCallBack * p, const char * cmd, shutdownSubscribe
     delete subscriberProxy;
 }
 
+void subscriberTreatUInt8ArrayAsString(SScriptCallBack * p, const char * cmd, subscriberTreatUInt8ArrayAsString_in * in, subscriberTreatUInt8ArrayAsString_out * out)
+{
+    if(subscriberProxies.find(in->subscriberHandle) == subscriberProxies.end())
+    {
+        throw exception("invalid subscriber handle");
+    }
+
+    SubscriberProxy *subscriberProxy = subscriberProxies[in->subscriberHandle];
+    subscriberProxy->wr_opt.uint8array_as_string = true;
+}
+
 void advertise(SScriptCallBack * p, const char * cmd, advertise_in * in, advertise_out * out)
 {
     PublisherProxy *publisherProxy = new PublisherProxy();
@@ -150,6 +161,17 @@ void shutdownPublisher(SScriptCallBack * p, const char * cmd, shutdownPublisher_
     publisherProxy->publisher.shutdown();
     publisherProxies.erase(publisherProxy->handle);
     delete publisherProxy;
+}
+
+void publisherTreatUInt8ArrayAsString(SScriptCallBack * p, const char * cmd, publisherTreatUInt8ArrayAsString_in * in, publisherTreatUInt8ArrayAsString_out * out)
+{
+    if(publisherProxies.find(in->publisherHandle) == publisherProxies.end())
+    {
+        throw exception("invalid publisher handle");
+    }
+
+    PublisherProxy *publisherProxy = publisherProxies[in->publisherHandle];
+    publisherProxy->rd_opt.uint8array_as_string = true;
 }
 
 void publish(SScriptCallBack * p, const char * cmd, publish_in * in, publish_out * out)
@@ -208,6 +230,18 @@ void shutdownServiceClient(SScriptCallBack * p, const char * cmd, shutdownServic
     delete serviceClientProxy;
 }
 
+void serviceClientTreatUInt8ArrayAsString(SScriptCallBack * p, const char * cmd, serviceClientTreatUInt8ArrayAsString_in * in, serviceClientTreatUInt8ArrayAsString_out * out)
+{
+    if(serviceClientProxies.find(in->serviceClientHandle) == serviceClientProxies.end())
+    {
+        throw exception("invalid service client handle");
+    }
+
+    ServiceClientProxy *serviceClientProxy = serviceClientProxies[in->serviceClientHandle];
+    serviceClientProxy->rd_opt.uint8array_as_string = true;
+    serviceClientProxy->wr_opt.uint8array_as_string = true;
+}
+
 void call(SScriptCallBack * p, const char * cmd, call_in * in, call_out * out)
 {
     if(serviceClientProxies.find(in->serviceClientHandle) == serviceClientProxies.end())
@@ -264,6 +298,18 @@ void shutdownServiceServer(SScriptCallBack * p, const char * cmd, shutdownServic
     serviceServerProxy->server.shutdown();
     serviceServerProxies.erase(serviceServerProxy->handle);
     delete serviceServerProxy;
+}
+
+void serviceServerTreatUInt8ArrayAsString(SScriptCallBack * p, const char * cmd, serviceServerTreatUInt8ArrayAsString_in * in, serviceServerTreatUInt8ArrayAsString_out * out)
+{
+    if(serviceServerProxies.find(in->serviceServerHandle) == serviceServerProxies.end())
+    {
+        throw exception("invalid service server handle");
+    }
+
+    ServiceServerProxy *serviceServerProxy = serviceServerProxies[in->serviceServerHandle];
+    serviceServerProxy->rd_opt.uint8array_as_string = true;
+    serviceServerProxy->wr_opt.uint8array_as_string = true;
 }
 
 void sendTransform(SScriptCallBack * p, const char * cmd, sendTransform_in * in, sendTransform_out * out)
