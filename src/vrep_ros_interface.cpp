@@ -627,45 +627,48 @@ VREP_DLLEXPORT void v_repEnd()
     unloadVrepLibrary(vrepLib); // release the library
 }
 
-// This is the plugin messaging routine (i.e. V-REP calls this function very often, with various messages):
-VREP_DLLEXPORT void* v_repMessage(int message,int* auxiliaryData,void* customData,int* replyData)
-{ 
-    // This is called quite often. Just watch out for messages/events you want to handle
-    // Keep following 4 lines at the beginning and unchanged:
+VREP_DLLEXPORT void * v_repMessage(int message, int *auxiliaryData, void *customData, int *replyData)
+{
+    static int previousStopSimulationRequestCounter = -1;
     int errorModeSaved;
-    simGetIntegerParameter(sim_intparam_error_report_mode,&errorModeSaved);
-    simSetIntegerParameter(sim_intparam_error_report_mode,sim_api_errormessage_ignore);
+    simGetIntegerParameter(sim_intparam_error_report_mode, &errorModeSaved);
+    simSetIntegerParameter(sim_intparam_error_report_mode, sim_api_errormessage_ignore);
     void* retVal=NULL;
 
-    // Here we can intercept many messages from V-REP (actually callbacks). Only the most important messages are listed here:
-
-    if (message==sim_message_eventcallback_instancepass)
-    { 
-        // This message is sent each time the scene was rendered (well, shortly after) (very often)
-        // When a simulation is not running, but you still need to execute some commands, then put some code here
+    if(message == sim_message_eventcallback_instancepass)
+    {
         ros::spinOnce();
     }
 
-    if (message==sim_message_eventcallback_mainscriptabouttobecalled)
-    { 
-        // Main script is about to be run (only called while a simulation is running (and not paused!))
-        //
-        // This is a good location to execute simulation commands
+    if(message == sim_message_eventcallback_mainscriptabouttobecalled)
+    {
+        int stopSimulationRequestCounter;
+        simGetIntegerParameter(sim_intparam_stop_request_counter, &stopSimulationRequestCounter);
+        simBool doNotRun = simGetBoolParameter(sim_boolparam_rosinterface_donotrunmainscript);
+        if(doNotRun>0)
+        {
+            if(previousStopSimulationRequestCounter == -1)
+                previousStopSimulationRequestCounter = stopSimulationRequestCounter;
+            if(previousStopSimulationRequestCounter == stopSimulationRequestCounter)
+                replyData[0] = 0; // this tells V-REP that we don't wanna execute the main script
+        }
+        else
+            previousStopSimulationRequestCounter=-1;
     }
 
-    if (message==sim_message_eventcallback_simulationabouttostart)
-    { 
-        // Simulation is about to start
+    if(message == sim_message_eventcallback_simulationabouttostart)
+    {
+        previousStopSimulationRequestCounter=-1;
     }
 
-    if (message==sim_message_eventcallback_simulationended)
-    { 
+    if(message == sim_message_eventcallback_simulationended)
+    {
         // Simulation just ended
         shutdownTransientProxies(NULL /* XXX: which SScriptCallBack struct? */);
     }
 
-    // Keep following unchanged:
-    simSetIntegerParameter(sim_intparam_error_report_mode,errorModeSaved); // restore previous settings
+    // restore previous settings
+    simSetIntegerParameter(sim_intparam_error_report_mode, errorModeSaved); 
     return retVal;
 }
 
