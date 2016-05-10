@@ -331,6 +331,7 @@ void read__{norm}(int stack, {ctype} *msg, const ReadOptions *opt)
                                  */
                                 {reserve_space}
                                 std::memcpy(&(msg->{n}[0]), str, sz);
+                                simReleaseBufferE(str);
                             }}
                             else throw exception("string read error when trying to read uint8[]");
                         }}
