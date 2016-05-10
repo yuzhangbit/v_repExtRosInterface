@@ -177,6 +177,7 @@ void read__string(int stack, std::string *value, const ReadOptions *opt)
     {
         *value = std::string(str, strSize);
         simPopStackItemE(stack, 1);
+        simReleaseBufferE(str);
     }
     else
     {
