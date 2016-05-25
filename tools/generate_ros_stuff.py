@@ -514,7 +514,6 @@ def generate_srv_call(gt, fields_in, fields_out, d, f):
         if(serviceClientProxy->client.call(srv))
         {{
             write__{norm}Response(srv.response, p->stackID, &(serviceClientProxy->wr_opt));
-            out->result = true;
         }}
         else
         {{

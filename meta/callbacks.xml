@@ -186,8 +186,8 @@
                  when calling the C++ callback -->
         </params>
         <return>
-            <param name="result" type="bool" default="false">
-                <description>true if the call succeeded, false otherwise</description>
+            <param name="result" type="table" skip="true">
+                <description>the response message, if the call succeeded</description>
             </param>
         </return>
     </command>
