@@ -5,13 +5,17 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp image_transport tf cv_bridge
 )
 
+if(NOT DEFINED ENV{VREP_ROOT})
+  message(FATAL_ERROR "Environment variable \$VREP_ROOT is not set. Please set it to point to the root directory of V-REP.")
+endif()
+
 catkin_package(
    CATKIN_DEPENDS roscpp rosconsole cv_bridge image_transport tf brics_actuator roslib actionlib_msgs control_msgs diagnostic_msgs geometry_msgs map_msgs nav_msgs pcl_msgs sensor_msgs shape_msgs std_msgs tf2_geometry_msgs tf2_msgs tf2_sensor_msgs trajectory_msgs visualization_msgs
    DEPENDS roscpp rosconsole cv_bridge image_transport tf brics_actuator roslib actionlib_msgs control_msgs diagnostic_msgs geometry_msgs map_msgs nav_msgs pcl_msgs sensor_msgs shape_msgs std_msgs tf2_geometry_msgs tf2_msgs tf2_sensor_msgs trajectory_msgs visualization_msgs)
 
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/generated)
 
-include_directories(include ${CMAKE_BINARY_DIR}/generated ${catkin_INCLUDE_DIRS})
+include_directories(include ${CMAKE_BINARY_DIR}/generated ${catkin_INCLUDE_DIRS} $ENV{VREP_ROOT}/programming/include $ENV{VREP_ROOT}/programming/common)
 
 link_directories("/opt/ros/fuerte/lib")
 link_directories("/opt/ros/groovy/lib")
@@ -29,7 +33,7 @@ add_custom_command(OUTPUT
     COMMAND python -m v_repStubsGen -H ${CMAKE_BINARY_DIR}/generated/stubs.h -C ${CMAKE_BINARY_DIR}/generated/stubs.cpp ${CMAKE_SOURCE_DIR}/meta/callbacks.xml
     DEPENDS ${CMAKE_SOURCE_DIR}/meta/callbacks.xml)
 
-add_library(v_repExtRosInterface src/vrep_ros_interface.cpp generated/stubs.cpp src/ros_msg_builtin_io.cpp generated/ros_msg_io.cpp generated/ros_srv_io.cpp src/v_repLib.cpp)
+add_library(v_repExtRosInterface src/vrep_ros_interface.cpp generated/stubs.cpp src/ros_msg_builtin_io.cpp generated/ros_msg_io.cpp generated/ros_srv_io.cpp src/v_repLib_inc.cpp)
 
 add_dependencies(v_repExtRosInterface ${catkin_EXPORTED_TARGETS})
 target_link_libraries(v_repExtRosInterface
