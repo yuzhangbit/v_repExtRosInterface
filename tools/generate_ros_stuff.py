@@ -300,6 +300,7 @@ void read__{norm}(int stack, {ctype} *msg, const ReadOptions *opt)
                             throw exception("fast_write_type reader exception #1");
                         {reserve_space}
                         simGetStack{fast_write_type}TableE(stack, &(msg->{n}[0]), sz);
+                        simPopStackItemE(stack, 1);
                     }}
                     catch(exception& ex)
                     {{
@@ -345,6 +346,7 @@ void read__{norm}(int stack, {ctype} *msg, const ReadOptions *opt)
                                 throw exception("fast_write_type uint8[] reader exception #1");
                             {reserve_space}
                             simGetStackUInt8TableE(stack, &(msg->{n}[0]), sz);
+                            simPopStackItemE(stack, 1);
 			}}
                     }}
                     catch(exception& ex)
