@@ -598,6 +598,7 @@ def main(argc, argv):
     with open(messages_file) as f:
         for l in f.readlines():
             l = l.strip()
+            if not l: continue
             pkg, n = l.split('/')
             resolve_msg[n] = l
 
@@ -605,7 +606,9 @@ def main(argc, argv):
     srv_list = set()
     with open(services_file) as f:
         for l in f.readlines():
-            srv_list.add(l.strip())
+            l = l.strip()
+            if not l: continue
+            srv_list.add(l)
 
     f_msg_cpp = open(output_dir + '/ros_msg_io.cpp', 'w')
     f_msg_h = open(output_dir + '/ros_msg_io.h', 'w')
