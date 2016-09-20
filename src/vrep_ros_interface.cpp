@@ -444,6 +444,12 @@ void imageTransportPublish(SScriptCallBack *p, const char *cmd, imageTransportPu
     publisherProxy->imageTransportPublisher.publish(image_msg);
 }
 
+void getTime(SScriptCallBack *p, const char *cmd, getTime_in *in, getTime_out *out)
+{
+    if(in->flag == 0)
+        out->time = ros::Time::now().toSec();
+}
+
 bool initialize()
 {
     int argc = 0;

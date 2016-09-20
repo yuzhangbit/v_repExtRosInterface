@@ -357,6 +357,19 @@
         <return>
         </return>
     </command>
+    <command name="getTime">
+        <description>Return the current ROS time (i.e. the time returned by ros::Time::now()).</description>
+        <params>
+            <param name="flag" type="int" default="0">
+                <description>unused: set to zero</description>
+            </param>
+        </params>
+        <return>
+            <param name="time" type="double" default="0">
+                <description>ROS time expressed in seconds</description>
+            </param>
+        </return>
+    </command>
     <script-function name="subscriberCallback">
         <description>Callback for ROS subscriber.</description>
         <params>
