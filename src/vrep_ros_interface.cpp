@@ -450,6 +450,65 @@ void getTime(SScriptCallBack *p, const char *cmd, getTime_in *in, getTime_out *o
         out->time = ros::Time::now().toSec();
 }
 
+void getParamString(SScriptCallBack *p, const char *cmd, getParamString_in *in, getParamString_out *out)
+{
+    out->value = in->defaultValue;
+    out->exists = ros::param::get(in->name, out->value);
+}
+
+void getParamInt(SScriptCallBack *p, const char *cmd, getParamInt_in *in, getParamInt_out *out)
+{
+    out->value = in->defaultValue;
+    out->exists = ros::param::get(in->name, out->value);
+}
+
+void getParamDouble(SScriptCallBack *p, const char *cmd, getParamDouble_in *in, getParamDouble_out *out)
+{
+    out->value = in->defaultValue;
+    out->exists = ros::param::get(in->name, out->value);
+}
+
+void getParamBool(SScriptCallBack *p, const char *cmd, getParamBool_in *in, getParamBool_out *out)
+{
+    out->value = in->defaultValue;
+    out->exists = ros::param::get(in->name, out->value);
+}
+
+void setParamString(SScriptCallBack *p, const char *cmd, setParamString_in *in, setParamString_out *out)
+{
+    ros::param::set(in->name, in->value);
+}
+
+void setParamInt(SScriptCallBack *p, const char *cmd, setParamInt_in *in, setParamInt_out *out)
+{
+    ros::param::set(in->name, in->value);
+}
+
+void setParamDouble(SScriptCallBack *p, const char *cmd, setParamDouble_in *in, setParamDouble_out *out)
+{
+    ros::param::set(in->name, in->value);
+}
+
+void setParamBool(SScriptCallBack *p, const char *cmd, setParamBool_in *in, setParamBool_out *out)
+{
+    ros::param::set(in->name, in->value);
+}
+
+void hasParam(SScriptCallBack *p, const char *cmd, hasParam_in *in, hasParam_out *out)
+{
+    out->exists = ros::param::has(in->name);
+}
+
+void deleteParam(SScriptCallBack *p, const char *cmd, deleteParam_in *in, deleteParam_out *out)
+{
+    ros::param::del(in->name);
+}
+
+void searchParam(SScriptCallBack *p, const char *cmd, searchParam_in *in, searchParam_out *out)
+{
+    out->found = ros::param::search(in->name, out->name);
+}
+
 bool initialize()
 {
     int argc = 0;

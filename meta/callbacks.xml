@@ -370,6 +370,173 @@
             </param>
         </return>
     </command>
+    <command name="getParamString">
+        <description>Retrieve a string parameter from the ROS Parameter Server.</description>
+        <params>
+            <param name="name" type="string">
+                <description>name of the parameter</description>
+            </param>
+            <param name="defaultValue" type="string" default="">
+                <description>default value returned when parameter does not exist</description>
+            </param>
+        </params>
+        <return>
+            <param name="exists" type="bool">
+                <description>true if the param exists otherwise false</description>
+            </param>
+            <param name="value" type="string" default="">
+                <description>the value of the requested parameter</description>
+            </param>
+        </return>
+    </command>
+    <command name="getParamInt">
+        <description>Retrieve an integer parameter from the ROS Parameter Server.</description>
+        <params>
+            <param name="name" type="string">
+                <description>name of the parameter</description>
+            </param>
+            <param name="defaultValue" type="int" default="0">
+                <description>default value returned when parameter does not exist</description>
+            </param>
+        </params>
+        <return>
+            <param name="exists" type="bool">
+                <description>true if the param exists otherwise false</description>
+            </param>
+            <param name="value" type="int" default="0">
+                <description>the value of the requested parameter</description>
+            </param>
+        </return>
+    </command>
+    <command name="getParamDouble">
+        <description>Retrieve a double parameter from the ROS Parameter Server.</description>
+        <params>
+            <param name="name" type="string">
+                <description>name of the parameter</description>
+            </param>
+            <param name="defaultValue" type="double" default="0.0">
+                <description>default value returned when parameter does not exist</description>
+            </param>
+        </params>
+        <return>
+            <param name="exists" type="bool">
+                <description>true if the param exists otherwise false</description>
+            </param>
+            <param name="value" type="double" default="0.0">
+                <description>the value of the requested parameter</description>
+            </param>
+        </return>
+    </command>
+    <command name="getParamBool">
+        <description>Retrieve a boolean parameter from the ROS Parameter Server.</description>
+        <params>
+            <param name="name" type="string">
+                <description>name of the parameter</description>
+            </param>
+            <param name="defaultValue" type="bool" default="false">
+                <description>default value returned when parameter does not exist</description>
+            </param>
+        </params>
+        <return>
+            <param name="exists" type="bool">
+                <description>true if the param exists otherwise false</description>
+            </param>
+            <param name="value" type="bool" default="false">
+                <description>the value of the requested parameter</description>
+            </param>
+        </return>
+    </command>
+    <command name="setParamString">
+        <description>Set a string parameter in the ROS Parameter Server.</description>
+        <params>
+            <param name="name" type="string">
+                <description>name of the parameter</description>
+            </param>
+            <param name="value" type="string">
+                <description>value of the parameter</description>
+            </param>
+        </params>
+        <return>
+        </return>
+    </command>
+    <command name="setParamInt">
+        <description>Set a integer parameter in the ROS Parameter Server.</description>
+        <params>
+            <param name="name" type="string">
+                <description>name of the parameter</description>
+            </param>
+            <param name="value" type="int">
+                <description>value of the parameter</description>
+            </param>
+        </params>
+        <return>
+        </return>
+    </command>
+    <command name="setParamDouble">
+        <description>Set a double parameter in the ROS Parameter Server.</description>
+        <params>
+            <param name="name" type="string">
+                <description>name of the parameter</description>
+            </param>
+            <param name="value" type="double">
+                <description>value of the parameter</description>
+            </param>
+        </params>
+        <return>
+        </return>
+    </command>
+    <command name="setParamBool">
+        <description>Set a boolean parameter in the ROS Parameter Server.</description>
+        <params>
+            <param name="name" type="string">
+                <description>name of the parameter</description>
+            </param>
+            <param name="value" type="bool">
+                <description>value of the parameter</description>
+            </param>
+        </params>
+        <return>
+        </return>
+    </command>
+    <command name="hasParam">
+        <description>Check wether a parameter exists in the ROS Parameter Server.</description>
+        <params>
+            <param name="name" type="string">
+                <description>name of the parameter</description>
+            </param>
+        </params>
+        <return>
+            <param name="exists" type="bool">
+                <description>true if the parameter exists, false otherwise</description>
+            </param>
+        </return>
+    </command>
+    <command name="deleteParam">
+        <description>Delete a parameter in the ROS Parameter Server.</description>
+        <params>
+            <param name="name" type="string">
+                <description>name of the parameter</description>
+            </param>
+        </params>
+        <return>
+        </return>
+    </command>
+    <command name="searchParam">
+        <description>Search a parameter in the ROS Parameter Server, looking in the closest namespace.</description>
+        <params>
+            <param name="name" type="string">
+                <description>name of the parameter</description>
+            </param>
+        </params>
+        <return>
+            <param name="found" type="bool">
+                <description>true if the parameter has been found</description>
+            </param>
+            <param name="name" type="string">
+                <description>name of the parameter which has been found</description>
+            </param>
+        </return>
+    </command>
     <script-function name="subscriberCallback">
         <description>Callback for ROS subscriber.</description>
         <params>
