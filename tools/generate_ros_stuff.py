@@ -1,7 +1,8 @@
 from sys import argv, exit, stderr
 import os
 import re
-import subprocess
+import rospkg
+import rosmsg
 
 # used to resolve messages specified without a package name
 # name -> pkg/name
@@ -112,20 +113,18 @@ def get_fields(lines):
     return fields
 
 # parse msg definition
-def get_msg_fields(msg_name):
-    with open(os.devnull, 'w') as fnull:
-        lines = [ln.strip() for ln in subprocess.check_output(['rosmsg', 'show', '-r', msg_name], stderr=fnull).split('\n')]
-        return get_fields(lines)
+def get_msg_fields(msg_name, rospack=None):
+    lines = [ln.strip() for ln in rosmsg.get_msg_text(msg_name, True, rospack).splitlines()]
+    return get_fields(lines)
 
 # parse srv definition
-def get_srv_fields(srv_name):
-    with open(os.devnull, 'w') as fnull:
-        lines = [ln.strip() for ln in subprocess.check_output(['rossrv', 'show', '-r', srv_name], stderr=fnull).split('\n')]
-        sep = '---'
-        if sep not in lines:
-            raise ValueError('bad srv definition')
-        i = lines.index(sep)
-        return get_fields(lines[:i]), get_fields(lines[i+1:])
+def get_srv_fields(srv_name, rospack=None):
+    lines = [ln.strip() for ln in rosmsg.get_srv_text(srv_name, True, rospack).splitlines()]
+    sep = '---'
+    if sep not in lines:
+        raise ValueError('bad srv definition')
+    i = lines.index(sep)
+    return get_fields(lines[:i]), get_fields(lines[i+1:])
 
 def generate_msg_wr_h(gt, fields, d, f):
     s = '''
@@ -634,7 +633,7 @@ def main(argc, argv):
 #include <ros_msg_builtin_io.h>
 #include <vrep_ros_interface.h>
 
-''') 
+''')
     f_srv_cpp.write('''#include <ros_msg_io.h>
 #include <ros_srv_io.h>
 #include <v_repLib.h>
@@ -647,8 +646,11 @@ def main(argc, argv):
 #include <ros/ros.h>
 #include <vrep_ros_interface.h>
 
-''') 
+''')
 
+    # Utility class used by rosmsg functions
+    # Initializing it in advance yields better performance
+    rospack = rospkg.RosPack()
 
     # get msg definitions
     print('Getting msg definitions...')
@@ -656,8 +658,8 @@ def main(argc, argv):
     for msg in sorted(set(resolve_msg.values())):
         print('Getting definition of msg %s...' % msg)
         try:
-            msg_fields[msg] = get_msg_fields(msg)
-        except subprocess.CalledProcessError:
+            msg_fields[msg] = get_msg_fields(msg, rospack)
+        except rosmsg.ROSMsgException:
             print('WARNING: bad msg: %s' % msg)
             continue
 
@@ -667,8 +669,8 @@ def main(argc, argv):
     for srv in sorted(srv_list):
         print('Getting definition of srv %s...' % srv)
         try:
-            srv_fields[srv] = get_srv_fields(srv)
-        except subprocess.CalledProcessError:
+            srv_fields[srv] = get_srv_fields(srv, rospack)
+        except rosmsg.ROSMsgException:
             print('WARNING: bad srv: %s' % srv)
             continue
 
