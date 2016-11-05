@@ -43,12 +43,17 @@ else()
 endif()
 
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/doc/reference.html)
-  MESSAGE(STATUS "*** Generating doc/reference.html ***")
-  add_custom_command(OUTPUT
-    ${CMAKE_BINARY_DIR}/doc/reference.html
-    COMMAND saxon -s:${CMAKE_SOURCE_DIR}/meta/callbacks.xml -a:on -o:${CMAKE_BINARY_DIR}/doc/reference.html
-    DEPENDS ${CMAKE_SOURCE_DIR}/meta/callbacks.xml)
-  add_custom_target(gendoc ALL DEPENDS ${CMAKE_BINARY_DIR}/doc/reference.html)
+  find_program(SAXON_PROGRAM saxon)
+  if(SAXON_PROGRAM)
+    MESSAGE(STATUS "*** Generating doc/reference.html ***")
+    add_custom_command(OUTPUT
+      ${CMAKE_BINARY_DIR}/doc/reference.html
+      COMMAND ${SAXON_PROGRAM} -s:${CMAKE_SOURCE_DIR}/meta/callbacks.xml -a:on -o:${CMAKE_BINARY_DIR}/doc/reference.html
+      DEPENDS ${CMAKE_SOURCE_DIR}/meta/callbacks.xml)
+    add_custom_target(gendoc ALL DEPENDS ${CMAKE_BINARY_DIR}/doc/reference.html)
+  else()
+    MESSAGE(WARNING "'saxon' not available - will not generate documentation.")
+  endif()
 endif()
 
 add_dependencies(v_repExtRosInterface ${catkin_EXPORTED_TARGETS})
