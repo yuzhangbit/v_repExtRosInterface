@@ -4,10 +4,6 @@ import re
 import rospkg
 import rosmsg
 
-# used to resolve messages specified without a package name
-# name -> pkg/name
-resolve_msg = {}
-
 def is_identifier(s):
     return re.match('^[a-zA-Z_][a-zA-Z0-9_]*$', s)
 
@@ -45,7 +41,6 @@ class TypeSpec:
             if len(m.group(2)) > 0:
                 self.array_size = int(m.group(2))
         # perform substitutions:
-        s = resolve_msg.get(s, s)
         if s in self.deprecated_builtins: s = self.deprecated_builtins[s]
         # check builtins:
         self.builtin = s in self.ctype_builtin
@@ -85,9 +80,9 @@ def get_fields(lines):
     fields = {}
 
     for ln in lines:
-        if '#' in ln:
-            # strip comments
-            ln = ln[:ln.find('#')].strip()
+        if ln.startswith('  '):
+            # ignore expansions of nested types
+            continue
 
         if ln == '':
             # ignore empty lines
@@ -114,12 +109,12 @@ def get_fields(lines):
 
 # parse msg definition
 def get_msg_fields(msg_name, rospack=None):
-    lines = [ln.strip() for ln in rosmsg.get_msg_text(msg_name, True, rospack).splitlines()]
+    lines = rosmsg.get_msg_text(msg_name, False, rospack).splitlines()
     return get_fields(lines)
 
 # parse srv definition
 def get_srv_fields(srv_name, rospack=None):
-    lines = [ln.strip() for ln in rosmsg.get_srv_text(srv_name, True, rospack).splitlines()]
+    lines = rosmsg.get_srv_text(srv_name, False, rospack).splitlines()
     sep = '---'
     if sep not in lines:
         raise ValueError('bad srv definition')
@@ -593,13 +588,13 @@ def main(argc, argv):
     services_file = argv[2]
     output_dir = argv[3]
 
-    # populate resolve_msg dictionary
+    # populate msg list
+    msg_list = set()
     with open(messages_file) as f:
         for l in f.readlines():
             l = l.strip()
             if not l: continue
-            pkg, n = l.split('/')
-            resolve_msg[n] = l
+            msg_list.add(l)
 
     # and srv list
     srv_list = set()
@@ -655,7 +650,7 @@ def main(argc, argv):
     # get msg definitions
     print('Getting msg definitions...')
     msg_fields = {}
-    for msg in sorted(set(resolve_msg.values())):
+    for msg in sorted(msg_list):
         print('Getting definition of msg %s...' % msg)
         try:
             msg_fields[msg] = get_msg_fields(msg, rospack)
