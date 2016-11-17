@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(vrep_ros_interface)
 
 find_package(catkin REQUIRED COMPONENTS
-  roscpp image_transport tf cv_bridge
+  roscpp rosmsg image_transport tf cv_bridge
 )
 
 if(NOT DEFINED ENV{VREP_ROOT})
