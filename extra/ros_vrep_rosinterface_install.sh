@@ -37,7 +37,7 @@ else
 	else
 		echo "Downloading $VREP_RELEASE..."
 		cd ~/Downloads
-		wget -q "http://coppeliarobotics.com/$VREP_RELEASE.tar.gz"
+		wget -q "http://coppeliarobotics.com/files/$VREP_RELEASE.tar.gz"
 	fi
 	echo "Installing $VREP_RELEASE..."
 	cd "$VREP_DESTDIR"
