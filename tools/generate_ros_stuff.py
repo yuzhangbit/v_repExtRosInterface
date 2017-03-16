@@ -248,7 +248,8 @@ void read__{norm}(int stack, {ctype} *msg, const ReadOptions *opt)
 {{
     try
     {{
-        if(simGetStackTableInfoE(stack, 0) != sim_stack_table_map)
+        int r = simGetStackTableInfoE(stack, 0);
+        if(r != sim_stack_table_map && r != sim_stack_table_empty)
             throw exception("expected a table");
 
         int oldsz = simGetStackSizeE(stack);
