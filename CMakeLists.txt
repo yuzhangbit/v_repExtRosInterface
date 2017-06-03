@@ -25,23 +25,25 @@ link_directories("/opt/ros/indigo/lib")
 link_directories("/opt/ros/jade/lib")
 link_directories("/opt/ros/kinetic/lib")
 
-add_custom_command(OUTPUT
-    ${CMAKE_BINARY_DIR}/generated/adv.cpp ${CMAKE_BINARY_DIR}/generated/pub.cpp ${CMAKE_BINARY_DIR}/generated/ros_msg_io.cpp ${CMAKE_BINARY_DIR}/generated/ros_msg_io.h ${CMAKE_BINARY_DIR}/generated/ros_srv_io.cpp ${CMAKE_BINARY_DIR}/generated/ros_srv_io.h ${CMAKE_BINARY_DIR}/generated/srvcall.cpp ${CMAKE_BINARY_DIR}/generated/srvcli.cpp ${CMAKE_BINARY_DIR}/generated/srvsrv.cpp ${CMAKE_BINARY_DIR}/generated/sub.cpp
-    COMMAND python "${CMAKE_SOURCE_DIR}/tools/generate_ros_stuff.py" "${CMAKE_SOURCE_DIR}/meta/messages.txt" "${CMAKE_SOURCE_DIR}/meta/services.txt" "${CMAKE_BINARY_DIR}/generated/"
-    DEPENDS ${CMAKE_SOURCE_DIR}/meta/messages.txt ${CMAKE_SOURCE_DIR}/meta/services.txt ${CMAKE_SOURCE_DIR}/tools/generate_ros_stuff.py)
+set(generatedFiles)
+file(GLOB templateFiles RELATIVE ${CMAKE_SOURCE_DIR}/templates/ ${CMAKE_SOURCE_DIR}/templates/*)
+foreach(templateFile ${templateFiles})
+    add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/generated/${templateFile}" COMMAND env PYTHONPATH="$ENV{PYTHONPATH}:${CMAKE_SOURCE_DIR}/tools" python "${CMAKE_SOURCE_DIR}/external/v_repStubsGen/external/pycpp/pycpp.py" -p "messages_file=${CMAKE_SOURCE_DIR}/meta/messages.txt" -p "services_file=${CMAKE_SOURCE_DIR}/meta/services.txt" -i "${CMAKE_SOURCE_DIR}/templates/${templateFile}" -o "${CMAKE_BINARY_DIR}/generated/${templateFile}" DEPENDS "${CMAKE_SOURCE_DIR}/meta/messages.txt" "${CMAKE_SOURCE_DIR}/meta/services.txt" "${CMAKE_SOURCE_DIR}/templates/${templateFile}")
+    set(generatedFiles ${generatedFiles} "${CMAKE_BINARY_DIR}/generated/${templateFile}")
+endforeach()
+add_custom_target(generate_ros_code DEPENDS ${generatedFiles})
 
 if((EXISTS ${CMAKE_SOURCE_DIR}/include/stubs.h) AND (EXISTS ${CMAKE_SOURCE_DIR}/src/stubs.cpp) AND (EXISTS ${CMAKE_SOURCE_DIR}/doc/reference.html))
-  add_library(v_repExtRosInterface src/vrep_ros_interface.cpp src/stubs.cpp src/ros_msg_builtin_io.cpp generated/ros_msg_io.cpp generated/ros_srv_io.cpp src/v_repLib_inc.cpp)
+    add_library(v_repExtRosInterface src/vrep_ros_interface.cpp src/stubs.cpp src/ros_msg_builtin_io.cpp src/v_repLib_inc.cpp generated/ros_msg_io.cpp generated/ros_srv_io.cpp)
 else()
   MESSAGE(STATUS "*** Generating build files ***")
   add_custom_command(OUTPUT
     ${CMAKE_BINARY_DIR}/generated/stubs.cpp ${CMAKE_BINARY_DIR}/generated/stubs.h ${CMAKE_SOURCE_DIR}/doc/reference.html
     COMMAND python "${CMAKE_SOURCE_DIR}/external/v_repStubsGen/generate.py" --xml-file "${CMAKE_SOURCE_DIR}/meta/callbacks.xml" --gen-all ${CMAKE_BINARY_DIR}/generated/
     DEPENDS ${CMAKE_SOURCE_DIR}/meta/callbacks.xml)
-  add_library(v_repExtRosInterface src/vrep_ros_interface.cpp generated/stubs.cpp src/ros_msg_builtin_io.cpp generated/ros_msg_io.cpp generated/ros_srv_io.cpp src/v_repLib_inc.cpp)
+  add_library(v_repExtRosInterface src/vrep_ros_interface.cpp generated/stubs.cpp src/ros_msg_builtin_io.cpp src/v_repLib_inc.cpp generated/ros_msg_io.cpp generated/ros_srv_io.cpp)
 endif()
-
-add_dependencies(v_repExtRosInterface ${catkin_EXPORTED_TARGETS})
+add_dependencies(v_repExtRosInterface ${catkin_EXPORTED_TARGETS} generate_ros_code)
 target_link_libraries(v_repExtRosInterface
     pthread
     dl
@@ -54,5 +56,5 @@ target_link_libraries(v_repExtRosInterface
     tf
     image_transport
     boost_system
-   ${catkin_LIBRARIES}
+    ${catkin_LIBRARIES}
 )

@@ -4,6 +4,7 @@
 *~
 *.o
 .*.swp
+*.pyc
 .DS_Store
 .AppleDouble
 .LSOverride
