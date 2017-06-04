@@ -7,9 +7,6 @@
 
 #define PLUGIN_VERSION 5 // 5 since 3.3.1 (using stacks to exchange data with scripts)
 
-#define CONCAT(x,y,z) x y z
-#define strConCat(x,y,z) CONCAT(x,y,z)
-
 LIBRARY vrepLib; // the V-REP library that we will dynamically load and bind
 
 ros::NodeHandle *nh = NULL;
