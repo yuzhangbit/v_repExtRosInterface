@@ -1,4 +1,4 @@
-# Qt Custom User Interface plugin for V-REP
+# ROS Interface plugin for V-REP
 
 ### Compiling
 
