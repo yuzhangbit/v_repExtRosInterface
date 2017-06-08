@@ -15,7 +15,7 @@ catkin_package(
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/generated)
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/doc)
 
-include_directories(include ${CMAKE_BINARY_DIR}/generated ${catkin_INCLUDE_DIRS} $ENV{VREP_ROOT}/programming/include $ENV{VREP_ROOT}/programming/common)
+include_directories(include ${CMAKE_BINARY_DIR}/generated ${catkin_INCLUDE_DIRS} ${VREP_INCLUDE} ${VREP_COMMON})
 
 link_directories("/opt/ros/fuerte/lib")
 link_directories("/opt/ros/groovy/lib")
