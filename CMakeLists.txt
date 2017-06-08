@@ -56,4 +56,5 @@ target_link_libraries(v_repExtRosInterface
     image_transport
     boost_system
     ${catkin_LIBRARIES}
+    ${VREP_LIBRARIES}
 )
