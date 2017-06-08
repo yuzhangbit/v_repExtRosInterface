@@ -5,9 +5,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp rosmsg image_transport tf cv_bridge
 )
 
-if(NOT DEFINED ENV{VREP_ROOT})
-  message(FATAL_ERROR "Environment variable \$VREP_ROOT is not set. Please set it to point to the root directory of V-REP.")
-endif()
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
+find_package(VREP REQUIRED)
 
 catkin_package(
    CATKIN_DEPENDS roscpp rosconsole cv_bridge image_transport tf brics_actuator roslib actionlib_msgs control_msgs diagnostic_msgs geometry_msgs map_msgs nav_msgs pcl_msgs sensor_msgs shape_msgs std_msgs tf2_geometry_msgs tf2_msgs tf2_sensor_msgs trajectory_msgs visualization_msgs
