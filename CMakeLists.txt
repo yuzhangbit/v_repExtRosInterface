@@ -33,17 +33,8 @@ foreach(templateFile ${templateFiles})
     set(generatedFiles ${generatedFiles} "${CMAKE_BINARY_DIR}/generated/${templateFile}")
 endforeach()
 add_custom_target(generate_ros_code DEPENDS ${generatedFiles})
-
-if((EXISTS ${CMAKE_SOURCE_DIR}/include/stubs.h) AND (EXISTS ${CMAKE_SOURCE_DIR}/src/stubs.cpp) AND (EXISTS ${CMAKE_SOURCE_DIR}/doc/reference.html))
-    add_library(v_repExtRosInterface src/vrep_ros_interface.cpp src/stubs.cpp src/ros_msg_builtin_io.cpp src/v_repLib_inc.cpp generated/ros_msg_io.cpp generated/ros_srv_io.cpp)
-else()
-  MESSAGE(STATUS "*** Generating build files ***")
-  add_custom_command(OUTPUT
-    ${CMAKE_BINARY_DIR}/generated/stubs.cpp ${CMAKE_BINARY_DIR}/generated/stubs.h ${CMAKE_SOURCE_DIR}/doc/reference.html
-    COMMAND python "${CMAKE_SOURCE_DIR}/external/v_repStubsGen/generate.py" --xml-file "${CMAKE_SOURCE_DIR}/meta/callbacks.xml" --gen-all ${CMAKE_BINARY_DIR}/generated/
-    DEPENDS ${CMAKE_SOURCE_DIR}/meta/callbacks.xml)
-  add_library(v_repExtRosInterface src/vrep_ros_interface.cpp generated/stubs.cpp src/ros_msg_builtin_io.cpp src/v_repLib_inc.cpp generated/ros_msg_io.cpp generated/ros_srv_io.cpp)
-endif()
+vrep_generate_stubs(${CMAKE_BINARY_DIR}/generated XML_FILE ${CMAKE_SOURCE_DIR}/callbacks.xml)
+add_library(v_repExtRosInterface src/vrep_ros_interface.cpp ${CMAKE_BINARY_DIR}/generated/stubs.cpp src/ros_msg_builtin_io.cpp ${VREP_EXPORTED_SOURCES} ${CMAKE_BINARY_DIR}/generated/ros_msg_io.cpp ${CMAKE_BINARY_DIR}/generated/ros_srv_io.cpp)
 add_dependencies(v_repExtRosInterface ${catkin_EXPORTED_TARGETS} generate_ros_code)
 target_link_libraries(v_repExtRosInterface
     pthread
