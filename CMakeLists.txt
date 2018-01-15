@@ -33,7 +33,7 @@ foreach(templateFile ${templateFiles})
     set(generatedFiles ${generatedFiles} "${CMAKE_BINARY_DIR}/generated/${templateFile}")
 endforeach()
 add_custom_target(generate_ros_code DEPENDS ${generatedFiles})
-vrep_generate_stubs(${CMAKE_BINARY_DIR}/generated XML_FILE ${CMAKE_SOURCE_DIR}/meta/callbacks.xml)
+vrep_generate_stubs(${CMAKE_BINARY_DIR}/generated XML_FILE ${CMAKE_SOURCE_DIR}/meta/callbacks.xml LUA_FILE ${CMAKE_SOURCE_DIR}/simExtRosInterface.lua)
 add_library(v_repExtRosInterface src/vrep_ros_interface.cpp ${CMAKE_BINARY_DIR}/generated/stubs.cpp src/ros_msg_builtin_io.cpp ${VREP_EXPORTED_SOURCES} ${CMAKE_BINARY_DIR}/generated/ros_msg_io.cpp ${CMAKE_BINARY_DIR}/generated/ros_srv_io.cpp)
 add_dependencies(v_repExtRosInterface ${catkin_EXPORTED_TARGETS} generate_ros_code)
 target_link_libraries(v_repExtRosInterface
