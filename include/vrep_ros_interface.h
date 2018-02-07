@@ -1,5 +1,5 @@
-#ifndef V_REPEXTROS_H
-#define V_REPEXTROS_H
+#ifndef VREP_ROS_INTERFACE_H_INCLUDED
+#define VREP_ROS_INTERFACE_H_INCLUDED
 
 #include <iostream>
 #include <sstream>
@@ -12,12 +12,8 @@
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
 
-#define VREP_DLLEXPORT extern "C"
-
-// The 3 required entry points of the V-REP plugin:
-VREP_DLLEXPORT unsigned char v_repStart(void* reservedPointer,int reservedInt);
-VREP_DLLEXPORT void v_repEnd();
-VREP_DLLEXPORT void* v_repMessage(int message,int* auxiliaryData,void* customData,int* replyData);
+#define PLUGIN_NAME "RosInterface"
+#define PLUGIN_VERSION 5
 
 struct ScriptCallback
 {
@@ -78,6 +74,4 @@ struct ServiceServerProxy : Proxy
 #include <ros_msg_io.h>
 #include <ros_srv_io.h>
 
-#include <v_repLib.h>
-
-#endif
+#endif // VREP_ROS_INTERFACE_H_INCLUDED
