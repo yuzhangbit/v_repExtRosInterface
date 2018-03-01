@@ -5,6 +5,7 @@
 #include <sensor_msgs/image_encodings.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
+#include <cstdlib>
 
 ros::NodeHandle *nh = NULL;
 
@@ -621,6 +622,9 @@ class Plugin : public vrep::Plugin
 public:
     void onStart()
     {
+        if(!getenv("ROS_MASTER_URI"))
+            throw std::runtime_error("ROS_MASTER_URI is not set");
+
         if(!initialize()) 
             throw std::runtime_error("ROS master is not running");
 
