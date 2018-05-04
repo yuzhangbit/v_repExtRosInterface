@@ -637,7 +637,7 @@ public:
         shutdown();
     }
 
-    void onInstancePass(bool objectsErased, bool objectsCreated, bool modelLoaded, bool sceneLoaded, bool undoCalled, bool redoCalled, bool sceneSwitched, bool editModeActive, bool objectsScaled, bool selectionStateChanged, bool keyPressed, bool simulationStarted, bool simulationEnded, bool scriptCreated, bool scriptErased)
+    void onInstancePass(const vrep::InstancePassFlags &flags, bool first)
     {
         ros::spinOnce();
     }
