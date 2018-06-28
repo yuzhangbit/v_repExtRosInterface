@@ -31,6 +31,7 @@ link_directories("/opt/ros/hydro/lib")
 link_directories("/opt/ros/indigo/lib")
 link_directories("/opt/ros/jade/lib")
 link_directories("/opt/ros/kinetic/lib")
+link_directories("/opt/ros/melodic/lib")
 
 set(generatedFiles)
 file(GLOB templateFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/templates/ ${CMAKE_CURRENT_SOURCE_DIR}/templates/*)
