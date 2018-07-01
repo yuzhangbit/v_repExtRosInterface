@@ -33,8 +33,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/mo
 
 find_package(VREP REQUIRED)
 
-catkin_package(
-    CATKIN_DEPENDS ${PKG_DEPS})
+catkin_package(CATKIN_DEPENDS ${PKG_DEPS})
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/generated)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc)
@@ -67,11 +66,9 @@ set(SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/generated/ros_srv_io.cpp
 )
 
-## create the library
 add_library(v_repExtRosInterface
     ${SOURCES})
 add_dependencies(v_repExtRosInterface generate_ros_code)
-## link the library
 target_link_libraries(v_repExtRosInterface
     ${catkin_LIBRARIES}
     ${VREP_LIBRARIES})
