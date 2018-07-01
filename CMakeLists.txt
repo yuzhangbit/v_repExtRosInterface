@@ -7,7 +7,8 @@ set(PKG_DEPS
     rosconsole
     cv_bridge
     image_transport
-    tf brics_actuator
+    tf
+    brics_actuator
     roslib
     brics_actuator
     actionlib_msgs
@@ -81,4 +82,4 @@ set_target_properties(v_repExtRosInterface
 
 ## install the library to VREP_ROOT folder
 ## this command will install the generated library to the vrep root folder no matter where the library is generated.
-#install(TARGETS v_repExtRosInterface DESTINATION ${VREP_ROOT})
+## install(TARGETS v_repExtRosInterface DESTINATION ${VREP_ROOT})
