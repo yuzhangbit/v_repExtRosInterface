@@ -4,26 +4,52 @@ project(vrep_ros_interface)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
-find_package(catkin REQUIRED COMPONENTS
-  roscpp rosmsg image_transport tf cv_bridge
+set(CATKIN_DEPS
+  roscpp
+  rosconsole
+  cv_bridge
+  image_transport
+  tf brics_actuator
+  roslib
+  brics_actuator
+  actionlib_msgs
+  control_msgs
+  diagnostic_msgs
+  geometry_msgs
+  map_msgs
+  nav_msgs
+  pcl_msgs
+  sensor_msgs
+  shape_msgs
+  std_msgs
+  tf2_geometry_msgs
+  tf2_msgs
+  tf2_sensor_msgs
+  trajectory_msgs
+  visualization_msgs)
+
+find_package(catkin REQUIRED COMPONENTS ${CATKIN_DEPS}
 )
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/")
 find_package(VREP REQUIRED)
-
+message(STATUS "vrep:" ${VREP_FOUND})
+message(STATUS "vrep:" ${VREP_INCLUDE})
+message(STATUS "vrep:" ${VREP_COMMON})
 catkin_package(
-    CATKIN_DEPENDS roscpp rosconsole cv_bridge image_transport tf brics_actuator roslib actionlib_msgs control_msgs diagnostic_msgs geometry_msgs map_msgs nav_msgs pcl_msgs sensor_msgs shape_msgs std_msgs tf2_geometry_msgs tf2_msgs tf2_sensor_msgs trajectory_msgs visualization_msgs
+    CATKIN_DEPENDS
 )
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/generated)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/generated)
-include_directories(${catkin_INCLUDE_DIRS})
-include_directories(${VREP_INCLUDE})
-include_directories(${VREP_COMMON})
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/external
+  ${CMAKE_CURRENT_BINARY_DIR}/generated
+  ${catkin_INCLUDE_DIRS}
+  ${VREP_INCLUDE}
+  ${VREP_COMMON})
 
 link_directories("/opt/ros/fuerte/lib")
 link_directories("/opt/ros/groovy/lib")
@@ -55,16 +81,8 @@ add_library(v_repExtRosInterface ${SOURCES})
 add_dependencies(v_repExtRosInterface ${catkin_EXPORTED_TARGETS} generate_ros_code)
 target_link_libraries(v_repExtRosInterface
     pthread
-    dl
-    roslib
-    rosconsole
-    rostime
-    rospack
-    roscpp_serialization
-    roscpp
-    tf
-    image_transport
-    boost_system
     ${catkin_LIBRARIES}
     ${VREP_LIBRARIES}
 )
+## install the library to VREP_ROOT folder
+install(TARGETS v_repExtRosInterface DESTINATION ${VREP_ROOT})
