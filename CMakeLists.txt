@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 2.8.3)
 project(vrep_ros_interface)
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
-set(CATKIN_DEPS
+set(PKG_DEPS
   roscpp
   rosconsole
   cv_bridge
@@ -28,16 +28,14 @@ set(CATKIN_DEPS
   trajectory_msgs
   visualization_msgs)
 
-find_package(catkin REQUIRED COMPONENTS ${CATKIN_DEPS}
+find_package(catkin REQUIRED COMPONENTS ${PKG_DEPS}
 )
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/")
 find_package(VREP REQUIRED)
-message(STATUS "vrep:" ${VREP_FOUND})
-message(STATUS "vrep:" ${VREP_INCLUDE})
-message(STATUS "vrep:" ${VREP_COMMON})
+
 catkin_package(
-    CATKIN_DEPENDS
+    CATKIN_DEPENDS ${PKG_DEPS}
 )
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/generated)

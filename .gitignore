@@ -39,3 +39,5 @@ generated
 # other:
 widgets.html
 
+# clion project files 
+.idea/
